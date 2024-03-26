@@ -42,8 +42,8 @@ Note that this only works, if the architecture of $h$ is suitable to classify EE
 
 \
 [1] https://huggingface.co/blog/synthetic-data-save-costs \
-[2] Azizi et al. (2023) "Synthetic Data from Diffusion Models Improves ImageNet Classification," arXiv: 2304.08466. \
+[2] Azizi et al. (2023) "Synthetic Data from Diffusion Models Improves ImageNet Classification", arXiv: 2304.08466. \
 [3] https://openai.com/research/dall-e \
 [4] https://www.midjourney.com/home \
-[5] R. Rombach, A. Blattmann, D. Lorenz, P. Esser, and B. Ommer (2022) Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, page 10684--10695. \
+[5] R. Rombach, A. Blattmann, D. Lorenz, P. Esser, and B. Ommer (2022) "High-resolution image synthesis with latent diffusion models", Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition, page 10684--10695. \
 [6] Shah Vinit, von Weltin Eva, Lopez Silvia, McHugh James Riley, Veloso Lillian, Golmohammadi Meysam, Obeid Iyad, Picone Joseph. (2018) "The Temple University Hospital Seizure Detection Corpus." Frontiers in Neuroinformatics 12: https://www.frontiersin.org/articles/10.3389/fninf.2018.00083. DOI: 10.3389/fninf.2018.00083. ISSN: 1662-5196.
