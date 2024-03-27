@@ -22,8 +22,8 @@ class EEGLoader(pl.LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
 
-        segments_path = os.path.join(self.data_dir, 'segments/')
-        labels_path = os.path.join(self.data_dir, 'labels/')
+        segments_path = os.path.join(self.data_dir, '..data/segments/')
+        labels_path = os.path.join(self.data_dir, '..data/labels/')
         filenames = [f for f in os.listdir(segments_path) if os.path.isfile(os.path.join(labels_path, f))]
 
         data = []
@@ -34,10 +34,6 @@ class EEGLoader(pl.LightningDataModule):
             label = np.load(os.path.join(labels_path, filename))
 
             segment = segment[:, 0, :1000]
-
-            plt.plot(segment[5])
-            plt.show()
-            exit()
 
             data.append(segment.astype(np.float16))
             labels.append(label.astype(np.float16))
@@ -112,12 +108,47 @@ class _1D_Diffusion(pl.LightningModule):
 # if __name__ == '__main__':
 #     _1D_Diffusion(debug=True)(torch.rand(32, 1, 1000))
 
-trainer = pl.Trainer( 
-                devices=1,
-                max_steps=10000,
-                enable_model_summary=False,
-                enable_progress_bar=True,
-                gradient_clip_val=1.5,
-                precision='16-mixed')
+# trainer = pl.Trainer( 
+#                 devices=1,
+#                 max_steps=10000,
+#                 enable_model_summary=False,
+#                 enable_progress_bar=True,
+#                 gradient_clip_val=1.5,
+#                 precision='16-mixed')
 
-trainer.fit(_1D_Diffusion(), EEGLoader())
+# trainer.fit(_1D_Diffusion(), EEGLoader())
+
+# -------------------------------------------------------------
+
+filenames = [f for f in os.listdir('..data/segments/') if os.path.isfile(os.path.join('..data/labels/', f))]
+
+data = []
+labels = []
+
+for filename in tqdm.tqdm(filenames):
+    segment = np.load(os.path.join('..data/segments/', filename))
+    label = np.load(os.path.join('..data/labels/', filename))
+
+    segment = segment[:, 0, :1000]
+
+    data.append(segment.astype(np.float16))
+    labels.append(label.astype(np.float16))
+    
+data = np.concatenate(data, axis=0).astype(np.float16)
+labels = np.concatenate(labels, axis=0).astype(np.float16)
+
+print(data.shape)
+print(labels.shape)
+exit()
+
+trainer = Trainer1D(
+    _1D_Diffusion(),
+    dataset = EEGLoader(),
+    train_batch_size = 32,
+    train_lr = 8e-5,
+    train_num_steps = 700000,         # total training steps
+    gradient_accumulate_every = 2,    # gradient accumulation steps
+    ema_decay = 0.995,                # exponential moving average decay
+    amp = True,                       # turn on mixed precision
+)
+trainer.train()
