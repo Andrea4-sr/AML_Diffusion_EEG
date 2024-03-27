@@ -120,6 +120,8 @@ class _1D_Diffusion(pl.LightningModule):
 
 # -------------------------------------------------------------
 
+print(os.listdir('..'))
+
 filenames = [f for f in os.listdir('..data/segments/') if os.path.isfile(os.path.join('..data/labels/', f))]
 
 data = []
