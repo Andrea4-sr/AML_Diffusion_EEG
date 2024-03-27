@@ -137,18 +137,18 @@ for filename in tqdm.tqdm(filenames):
 data = np.concatenate(data, axis=0).astype(np.float16)
 labels = np.concatenate(labels, axis=0).astype(np.float16)
 
-print(data.shape)
-print(labels.shape)
-exit()
+dataset = Dataset1D(torch.from_numpy(data).unsqueeze(1))
+print(torch.from_numpy(data).unsqueeze(1).shape)
 
 trainer = Trainer1D(
     _1D_Diffusion(),
-    dataset = EEGLoader(),
-    train_batch_size = 32,
+    dataset = dataset,
+    train_batch_size = 64,
     train_lr = 8e-5,
-    train_num_steps = 700000,         # total training steps
+    train_num_steps = 7000,         # total training steps
     gradient_accumulate_every = 2,    # gradient accumulation steps
     ema_decay = 0.995,                # exponential moving average decay
     amp = True,                       # turn on mixed precision
 )
+
 trainer.train()
