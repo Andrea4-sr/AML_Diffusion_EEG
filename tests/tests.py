@@ -120,16 +120,14 @@ class _1D_Diffusion(pl.LightningModule):
 
 # -------------------------------------------------------------
 
-print(os.listdir('..'))
-
-filenames = [f for f in os.listdir('..data/segments/') if os.path.isfile(os.path.join('..data/labels/', f))]
+filenames = [f for f in os.listdir('../data/segments/') if os.path.isfile(os.path.join('../data/labels/', f))]
 
 data = []
 labels = []
 
 for filename in tqdm.tqdm(filenames):
-    segment = np.load(os.path.join('..data/segments/', filename))
-    label = np.load(os.path.join('..data/labels/', filename))
+    segment = np.load(os.path.join('../data/segments/', filename))
+    label = np.load(os.path.join('../data/labels/', filename))
 
     segment = segment[:, 0, :1000]
 
