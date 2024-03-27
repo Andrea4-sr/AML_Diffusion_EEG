@@ -12,9 +12,10 @@ import pickle
 
 torch.set_float32_matmul_precision('medium')
 
-from denoising_diffusion_pytorch import Unet1D, GaussianDiffusion1D, Trainer1D, Dataset1D
+from denoising_diffusion_pytorch import Unet1D, GaussianDiffusion1D, Dataset1D
 from denoising_diffusion_pytorch.karras_unet_1d import KarrasUnet1D
 
+from trainer import Trainer1D
 
 class EEGLoader(pl.LightningDataModule):
     def __init__(self, data_dir='data', batch_size=128):
@@ -51,7 +52,6 @@ class EEGLoader(pl.LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(self.val_dataset, batch_size=self.batch_size, pin_memory=True)
-
 
 class _1D_Diffusion(pl.LightningModule):
     def __init__(self, debug = False, learning_rate=1e-4):
@@ -117,6 +117,8 @@ class _1D_Diffusion(pl.LightningModule):
 #                 precision='16-mixed')
 
 # trainer.fit(_1D_Diffusion(), EEGLoader())
+
+# -------------------------------------------------------------
 
 # -------------------------------------------------------------
 
