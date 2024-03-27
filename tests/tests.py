@@ -140,8 +140,23 @@ labels = np.concatenate(labels, axis=0).astype(np.float16)
 dataset = Dataset1D(torch.from_numpy(data).unsqueeze(1))
 print(torch.from_numpy(data).unsqueeze(1).shape)
 
+
+backbone = Unet1D(
+    dim = 64,
+    dim_mults = (1, 2, 4, 8),
+    channels = 1
+)
+
+model = GaussianDiffusion1D(
+    backbone,
+    seq_length = 1000,
+    timesteps = 1000,
+    objective = 'pred_v'
+)
+
+
 trainer = Trainer1D(
-    _1D_Diffusion(),
+    model,
     dataset = dataset,
     train_batch_size = 64,
     train_lr = 8e-5,
