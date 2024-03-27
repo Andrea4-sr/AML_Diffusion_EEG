@@ -879,3 +879,37 @@ class Trainer1D(object):
                 pbar.update(1)
 
         accelerator.print('training complete')
+
+
+if __name__ == "__main__":
+
+    import matplotlib.pyplot as plt
+
+    backbone = Unet1D(
+        dim=64,
+        dim_mults=(1, 2, 4, 8),
+        channels=1
+    )
+
+    model = GaussianDiffusion1D(
+        backbone,
+        seq_length=1000,
+        timesteps=1000,
+        objective='pred_v'
+    )
+
+    model.load_state_dict(torch.load("tests/results/model-7.pt")['model'])
+
+    model.eval().cuda()
+
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Total number of parameters: {total_params}")
+
+    with torch.no_grad():
+        samples = model.sample(batch_size=4)
+
+    plt.figure(figsize=(10, 5))
+    for n,i in enumerate(samples.cpu()): 
+        plt.plot(i.squeeze())
+        # plt.show()
+    plt.savefig(f"test.png")
