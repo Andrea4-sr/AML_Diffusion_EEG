@@ -34,10 +34,10 @@ class EEGAnalyzer:
                    ['EEG F3-REF', 'EEG F4-REF', 'EEG C3-REF', 'EEG C4-REF', 'EEG P3-REF', 'EEG P4-REF', 'EEG FZ-REF',
                     'EEG CZ-REF', 'EEG PZ-REF']
 
-            print(j)
+            #print(j)
             # Find the places in the original .getSignalLabels() function where the channels_of_interest are
             k = [f.getSignalLabels().index(x) for x in j]
-            print(k)
+            #print(k)
             f.close()
 
     def data_summary(self, data, channels, repo_dir):
@@ -131,6 +131,42 @@ class EEGAnalyzer:
     #             common_channels = common_channels.intersection(channels)
     #     return common_channels
 
+    def find_noisy_edfs(self, data, repo_dir, threshold_multiplier):
+
+        noisy_edfs = []
+
+        for file in tqdm.tqdm([f for f in os.listdir(data) if f.endswith('.edf')]):
+            file_path = os.path.join(data, file)
+            try:
+                edf_file = pyedflib.EdfReader(file_path)
+                num_channels = edf_file.signals_in_file
+                #print(num_channels)
+                all_eeg_data = np.zeros((num_channels, edf_file.getNSamples()[0]))
+                #print(edf_file.getNSamples()[0])
+                for i in range(num_channels):
+                    #print(i)
+                    all_eeg_data[i, :] = edf_file.readSignal(i)
+                print(all_eeg_data.shape)
+                std = np.std(all_eeg_data)
+                edf_file.close()
+
+                noise_threshold = threshold_multiplier*std
+                if noise_threshold > 0:
+                    noisy_edfs.append((file_path, noise_threshold))
+            except Exception as e:
+                print(f"Error processing file {file}: {e}")
+
+        if noisy_edfs:
+            with open(os.path.join(repo_dir, 'noisy_edfs.txt'), 'w') as f:
+                for noisy_file, threshold in noisy_files:
+                    f.write(f"Noisy file: {os.path.basename(noisy_file)}, Threshold: {threshold}\n")
+                print("Noisy files and their thresholds written to 'noisy_files_thresholds.txt'.")
+
+        else:
+            print("No noisy EDFs found")
+
+
+
 class EEGPreprocessor:
 
     def __init__(self, sampling_rate=1000):
@@ -182,4 +218,4 @@ if __name__ == "__main__":
     shared_channels = analyzer.common_channels(dir)
     stats = analyzer.data_summary(dir, interesting_channels, repo_dir=repo_dir)
 
-    #print("Shared EEG channels across all files:", stats)
+    noisy_edfs = analyzer.find_noisy_edfs(dir, repo_dir, threshold_multiplier=0.5)
