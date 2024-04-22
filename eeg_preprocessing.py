@@ -13,9 +13,10 @@ from scipy.stats import mode
 
 class EEGAnalyzer:
 
-    def __init__(self, data:str, channels:list):
+    def __init__(self, data:str, channels:list, repo_dir:str):
         self.data = data  # Assuming data is a path of EEG signals (.edf)
         self.channels = channels
+        self.repo_dir = repo_dir
 
     def common_channels(self, data):
 
@@ -39,7 +40,7 @@ class EEGAnalyzer:
             print(k)
             f.close()
 
-    def data_summary(self, data, channels):
+    def data_summary(self, data, channels, repo_dir):
 
         mean_sf_values = []
         mode_sf_values = []
@@ -83,6 +84,12 @@ class EEGAnalyzer:
             'std_duration': np.std(duration_values),
             'common_channels': sorted(list(channel_set))
         }
+
+        # Write summary stats to file
+        stats_file = os.path.join(repo_dir, 'summary_stats.txt')
+        with open(stats_file, 'w') as f:
+            for key, value in summary_stats.items():
+                f.write(f"{key}: {value}\n")
 
         return summary_stats
 
@@ -167,11 +174,12 @@ if __name__ == "__main__":
 
     # Example usage
     dir =  '/Users/andreasantos/Library/Mobile Documents/com~apple~CloudDocs/Documents/Andrea/Studies/Universities/UZH/Semester 8/Advanced ML/Project/data/edf/'
+    repo_dir = '/Users/andreasantos/Projects/Coding/AML_EEG/data/'
     interesting_channels = ["F3", "Fz", "F4", "C3", "Cz", "C4", "P3", "Pz", "P4"]
-    analyzer = EEGAnalyzer(data=dir, channels=interesting_channels)  # Create an instance of EEGAnalyzer
+    analyzer = EEGAnalyzer(data=dir, channels=interesting_channels, repo_dir=repo_dir)  # Create an instance of EEGAnalyzer
 
     # Find shared EEG channels across all CSV files
     shared_channels = analyzer.common_channels(dir)
-    stats = analyzer.data_summary(dir, interesting_channels)
+    stats = analyzer.data_summary(dir, interesting_channels, repo_dir=repo_dir)
 
-    print("Shared EEG channels across all files:", stats)
+    #print("Shared EEG channels across all files:", stats)
