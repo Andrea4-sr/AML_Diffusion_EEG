@@ -145,7 +145,7 @@ class EEGAnalyzer:
                 #print(edf_file.getNSamples()[0])
                 for i in range(num_channels):
                     #print(i)
-                    all_eeg_data[i, :] = edf_file.readSignal(i)
+                    all_eeg_data[i, :] = edf_file.readSignal(i) # extract signals and iterate over these
                 print(all_eeg_data.shape)
                 std = np.std(all_eeg_data)
                 edf_file.close()
@@ -169,8 +169,8 @@ class EEGAnalyzer:
 
 class EEGPreprocessor:
 
-    def __init__(self, sampling_rate=1000):
-        self.sampling_rate = sampling_rate
+    def __init__(self, data): #resample to 250Hz
+        self.data = data
 
     def bandpass_fitler(self, data, lowcut, highcut):
 
@@ -183,8 +183,10 @@ class EEGPreprocessor:
         return filtered_data
 
 
-    def downsampling(self, data, samples=250):
-        return
+    def resampling(self, data, samples=250):
+        resampled_raw = data.resample(samples)
+        resampled_data, _ = resampled_raw[:, :]
+        return resampled_data
     def remove_artifacts(self, data, threshold):
 
         artifacts_epochs = np.any(np.abs(data) > threshold, axis=1)
