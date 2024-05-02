@@ -9,14 +9,14 @@ import scipy
 import tqdm
 
 
-def filenames_of_edf_csv_pairs(edf_dir: str):
+def _filenames_of_edf_csv_pairs(edf_dir: str):
     edf_files = glob.glob(os.path.join(edf_dir, "*.edf"))
     filenames = [os.path.splitext(os.path.basename(x))[0] for x in edf_files]
     filenames_with_csv_and_edf = [x for x in filenames if os.path.isfile(os.path.join(edf_dir, x + ".csv")) ]# and os.path.isfile(os.path.join(edf_dir, ".edf"))] # not necessary since the initial list is based on edf files existing.
     return sorted(filenames_with_csv_and_edf)
 
 
-def has_interesting_channel(channel_spec: str, channels: list[str]):
+def _has_interesting_channel(channel_spec: str, channels: list[str]):
     channels_in_spec = channel_spec.split('-')
     for channel in channels_in_spec:
         if channel in channels:
@@ -24,7 +24,7 @@ def has_interesting_channel(channel_spec: str, channels: list[str]):
     return False
 
 
-def merge_ranges(ranges: list[tuple[int, int]]):
+def _merge_ranges(ranges: list[tuple[int, int]]):
     for range in ranges:
         assert range[0] < range[1]
         if range[0] >= range[1]:
@@ -55,10 +55,10 @@ class EdfReader(object):
         self.file.close()
 
 
-def get_ranges_for_labels(csv_file_path: str, labels: list[str], channels: list[str]):
+def _get_ranges_for_labels(csv_file_path: str, labels: list[str], channels: list[str]):
     csv_data = pandas.read_csv(csv_file_path, delimiter = ",", skiprows = 5)
     interesting_data = csv_data[csv_data['label'].isin(labels) &
-                                csv_data['channel'].apply(lambda x: has_interesting_channel(x, channels))]
+                                csv_data['channel'].apply(lambda x: _has_interesting_channel(x, channels))]
     
     ranges_for_labels = {}
 
@@ -68,7 +68,7 @@ def get_ranges_for_labels(csv_file_path: str, labels: list[str], channels: list[
         if not data_for_label.empty:
             ranges = list(zip(data_for_label['start_time'], data_for_label['stop_time']))
             try:
-                merged_ranges = merge_ranges(ranges)
+                merged_ranges = _merge_ranges(ranges)
                 ranges_for_labels[label] = merged_ranges
             except ValueError:
                 print(f"{csv_file_path}: Could not determine ranges for label {label}: {ranges}")
@@ -77,7 +77,7 @@ def get_ranges_for_labels(csv_file_path: str, labels: list[str], channels: list[
     return ranges_for_labels
 
 
-def normalize_channel_name(name: str):
+def _normalize_channel_name(name: str):
     if name.startswith('EEG '):
         name = name[4:]
     name = name.split('-')[0]
@@ -98,7 +98,7 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                         target_frequency: int,
                         signal_length_in_seconds: int,
                         max_files: int | None = None):
-    filenames_with_csv_and_edf = filenames_of_edf_csv_pairs(input_path)
+    filenames_with_csv_and_edf = _filenames_of_edf_csv_pairs(input_path)
     csv_files = [os.path.join(input_path, x + ".csv") for x in filenames_with_csv_and_edf]
     edf_files = [os.path.join(input_path, x + ".edf") for x in filenames_with_csv_and_edf]
 
@@ -110,11 +110,11 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
 
     try:
         for csv_file_path, edf_file_path in zip(csv_files, edf_files):
-            ranges = get_ranges_for_labels(csv_file_path, classes_to_extract, channels_to_extract)
+            ranges = _get_ranges_for_labels(csv_file_path, classes_to_extract, channels_to_extract)
 
             if len(ranges) > 0:
                 with EdfReader(edf_file_path) as edf_file:
-                    channels = [normalize_channel_name(n) for n in edf_file.getSignalLabels()]
+                    channels = [_normalize_channel_name(n) for n in edf_file.getSignalLabels()]
                     interesting_channel_indices = []
                     skip_file = False
 
