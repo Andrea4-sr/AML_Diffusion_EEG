@@ -116,36 +116,40 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                 with EdfReader(edf_file_path) as edf_file:
                     channels = [normalize_channel_name(n) for n in edf_file.getSignalLabels()]
                     interesting_channel_indices = []
+                    skip_file = False
 
                     for interesting_channel in channels_to_extract:
                         try:
                             interesting_channel_indices.append(channels.index(interesting_channel))
                         except:
-                            pass
+                            print(f'{os.path.basename(edf_file_path)} does not contain required channel {interesting_channel}. Skipping file.')
+                            skip_file = True
+                            break
                     
-                    data_per_channel = [edf_file.readSignal(channel) for channel in interesting_channel_indices]
-                    frequency_per_channel = [edf_file.getSampleFrequency(channel) for channel in interesting_channel_indices]
-                    data_per_channel = [_resample_signal(signal, source_freq, target_frequency) for signal, source_freq in zip(data_per_channel, frequency_per_channel)]
-                    signal_length_per_channel = [len(data) for data in data_per_channel]
-                    min_signal_length = min(signal_length_per_channel)
-                    data_per_channel = [data[:min_signal_length] for data in data_per_channel]
+                    if not skip_file:
+                        data_per_channel = [edf_file.readSignal(channel) for channel in interesting_channel_indices]
+                        frequency_per_channel = [edf_file.getSampleFrequency(channel) for channel in interesting_channel_indices]
+                        data_per_channel = [_resample_signal(signal, source_freq, target_frequency) for signal, source_freq in zip(data_per_channel, frequency_per_channel)]
+                        signal_length_per_channel = [len(data) for data in data_per_channel]
+                        min_signal_length = min(signal_length_per_channel)
+                        data_per_channel = [data[:min_signal_length] for data in data_per_channel]
 
-                    for label in ranges:
-                        os.makedirs(os.path.join(output_path, label), exist_ok = True)
-                        for r in ranges[label]:
-                            start_index = int(r[0] * target_frequency)
-                            end_index = int(r[1] * target_frequency)
-                            for i in range(start_index, end_index, num_samples):
-                                if end_index - i >= num_samples:
-                                    data_to_write = {channels[channel]: data_per_channel[index][i:i + num_samples] for index, channel in enumerate(interesting_channel_indices)}
-                                    output_filename = os.path.splitext(os.path.basename(edf_file_path))[0] + "_" + str(i).rjust(7, '0') + "_" + str(num_samples) + ".pkl"
-                                    with open(os.path.join(output_path, label, output_filename), 'wb') as output_file:
-                                        pickle.dump(data_to_write, output_file, pickle.HIGHEST_PROTOCOL)
-                                        files_created += 1
-                                        if max_files is not None:
-                                            progress.update()
-                                            if files_created >= max_files:
-                                                raise StopIteration()
+                        for label in ranges:
+                            os.makedirs(os.path.join(output_path, label), exist_ok = True)
+                            for r in ranges[label]:
+                                start_index = int(r[0] * target_frequency)
+                                end_index = int(r[1] * target_frequency)
+                                for i in range(start_index, end_index, num_samples):
+                                    if end_index - i >= num_samples:
+                                        data_to_write = {channels[channel]: data_per_channel[index][i:i + num_samples] for index, channel in enumerate(interesting_channel_indices)}
+                                        output_filename = os.path.splitext(os.path.basename(edf_file_path))[0] + "_" + str(i).rjust(7, '0') + "_" + str(num_samples) + ".pkl"
+                                        with open(os.path.join(output_path, label, output_filename), 'wb') as output_file:
+                                            pickle.dump(data_to_write, output_file, pickle.HIGHEST_PROTOCOL)
+                                            files_created += 1
+                                            if max_files is not None:
+                                                progress.update()
+                                                if files_created >= max_files:
+                                                    raise StopIteration()
             if max_files is None:
                 progress.update()
     except StopIteration:
