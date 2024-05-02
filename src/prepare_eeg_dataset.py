@@ -5,6 +5,7 @@ import pandas
 import pathlib
 import pickle
 import pyedflib
+import scipy
 import tqdm
 
 
@@ -83,17 +84,24 @@ def normalize_channel_name(name: str):
     return name
 
 
+def _resample_signal(signal, source_frequency: float, target_frequency: float):
+    if source_frequency == target_frequency:
+        return signal
+    else:
+        return scipy.signal.resample(signal, int(len(signal) * target_frequency / source_frequency))
+
+
 def prepare_eeg_dataset(input_path: pathlib.Path,
                         output_path: pathlib.Path,
                         channels_to_extract: list[str],
                         classes_to_extract: list[str],
-                        freq: int,
+                        target_frequency: int,
                         signal_length_in_seconds: int):
     filenames_with_csv_and_edf = filenames_of_edf_csv_pairs(input_path)
     csv_files = [os.path.join(input_path, x + ".csv") for x in filenames_with_csv_and_edf]
     edf_files = [os.path.join(input_path, x + ".edf") for x in filenames_with_csv_and_edf]
 
-    num_samples = freq * signal_length_in_seconds
+    num_samples = target_frequency * signal_length_in_seconds
 
     os.makedirs(output_path, exist_ok = True)
 
@@ -112,6 +120,8 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                         pass
                 
                 data_per_channel = [edf_file.readSignal(channel) for channel in interesting_channel_indices]
+                frequency_per_channel = [edf_file.getSampleFrequency(channel) for channel in interesting_channel_indices]
+                data_per_channel = [_resample_signal(signal, source_freq, target_frequency) for signal, source_freq in zip(data_per_channel, frequency_per_channel)]
                 signal_length_per_channel = [len(data) for data in data_per_channel]
                 min_signal_length = min(signal_length_per_channel)
                 data_per_channel = [data[:min_signal_length] for data in data_per_channel]
@@ -119,8 +129,8 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                 for label in ranges:
                     os.makedirs(os.path.join(output_path, label), exist_ok = True)
                     for r in ranges[label]:
-                        start_index = int(r[0] * freq)
-                        end_index = int(r[1] * freq)
+                        start_index = int(r[0] * target_frequency)
+                        end_index = int(r[1] * target_frequency)
                         for i in range(start_index, end_index, num_samples):
                             if end_index - i >= num_samples:
                                 data_to_write = {channels[channel]: data_per_channel[index][i:i + num_samples] for index, channel in enumerate(interesting_channel_indices)}
