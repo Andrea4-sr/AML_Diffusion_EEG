@@ -1,5 +1,3 @@
-# Code to preprocess epilepsy and healthy EEG signals
-
 import mne, os
 import numpy as np
 import pandas as pd
@@ -104,9 +102,16 @@ class EEGAnalyzer:
 
 
     # dist plots of amount of seizure activity in files - per channel
+    # dist plots of both seizure types
+    # folder in repo called statistics - stats.py that yields all plots
     # one label per file (multiple seizures per file)
     # method to discard files with no central electrodes
-    #
+    # non-overlaping sampling bc diff models are prone to mode collapse if it looks at the same data
+    # 4-10s
+    # Seizure class to be used (but this should be flexible within the dataloader): FNSZ or GNSZ (covers most of the scalp)
+    # mean 0 in architecture
+
+    # function to sample from the model to create a synthetic dataset with same conditions as real dataset and we use this later for evaluation
 
     def extract_eeg_channels(self, edf_file):
         eeg_channels = set()
@@ -145,6 +150,8 @@ class EEGAnalyzer:
     #         elif len(channels) >= 6:
     #             common_channels = common_channels.intersection(channels)
     #     return common_channels
+
+    # Automatic sample rejection for small std's (measurement error samples) or very high std's (noise)
 
     def find_noisy_edfs(self, data, repo_dir, threshold_multiplier):
 
@@ -190,12 +197,17 @@ class EEGPreprocessor:
     def bandpass_fitler(self, data, lowcut, highcut):
 
         nyq = 0.5*self.sampling_rate
-        low = lowcut/nyq
-        high = highcut/nyq
+        low = lowcut/nyq # lowcut 0.5Hz
+        high = highcut/nyq #highcut 60hz
         order = 2
         b, a = butter(order, [low, high], btype='band')
         filtered_data = filtfilt(b, a, data)
         return filtered_data
+
+    # seizures are visible in range 2-10hz
+    # pytorch data folder true
+
+
 
 
     def resampling(self, data, samples=250):
