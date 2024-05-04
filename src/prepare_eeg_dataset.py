@@ -149,6 +149,7 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                         target_frequency: int,
                         signal_length_in_seconds: int,
                         extract_ranges_from_csv: Callable[[str, list[str], list[str], float], dict[str, list[float, float]]],
+                        erode_channels_by_secs: float | None = None,
                         erode_ranges_by_secs: float | None = None,
                         max_files: int | None = None):
     filenames_with_csv_and_edf = _filenames_of_edf_csv_pairs(input_path)
@@ -180,31 +181,36 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                     data_per_channel = [edf_file.readSignal(channel) for channel in interesting_channel_indices]
                     frequency_per_channel = [edf_file.getSampleFrequency(channel) for channel in interesting_channel_indices]
                     data_per_channel = [_resample_signal(signal, source_freq, target_frequency) for signal, source_freq in zip(data_per_channel, frequency_per_channel)]
-                    signal_length_per_channel = [len(data) for data in data_per_channel]
-                    min_signal_length = min(signal_length_per_channel)
+                    min_signal_length = min([len(data) for data in data_per_channel])
                     data_per_channel = [data[:min_signal_length] for data in data_per_channel]
 
-                    ranges = extract_ranges_from_csv(csv_file_path, classes_to_extract, channels_to_extract, min_signal_length / target_frequency)
+                    if erode_channels_by_secs is not None:
+                        erode_by_samples = erode_channels_by_secs * target_frequency
+                        data_per_channel = [data[erode_by_samples:-erode_by_samples] for data in data_per_channel]
+                        min_signal_length = min([len(data) for data in data_per_channel])
 
-                    if erode_ranges_by_secs is not None:
-                        ranges = {label: _eroded_ranges(ranges[label], erode_ranges_by_secs) for label in ranges}
+                    if min_signal_length >= num_samples:
+                        ranges = extract_ranges_from_csv(csv_file_path, classes_to_extract, channels_to_extract, min_signal_length / target_frequency)
 
-                    for label in ranges:
-                        os.makedirs(os.path.join(output_path, label), exist_ok = True)
-                        for r in ranges[label]:
-                            start_index = int(r[0] * target_frequency)
-                            end_index = int(r[1] * target_frequency)
-                            for i in range(start_index, end_index, num_samples):
-                                if end_index - i >= num_samples:
-                                    data_to_write = {channels[channel]: data_per_channel[index][i:i + num_samples] for index, channel in enumerate(interesting_channel_indices)}
-                                    output_filename = os.path.splitext(os.path.basename(edf_file_path))[0] + "_" + str(i).rjust(7, '0') + "_" + str(num_samples) + ".pkl"
-                                    with open(os.path.join(output_path, label, output_filename), 'wb') as output_file:
-                                        pickle.dump(data_to_write, output_file, pickle.HIGHEST_PROTOCOL)
-                                        files_created += 1
-                                        if max_files is not None:
-                                            progress.update()
-                                            if files_created >= max_files:
-                                                raise StopIteration()
+                        if erode_ranges_by_secs is not None:
+                            ranges = {label: _eroded_ranges(ranges[label], erode_ranges_by_secs) for label in ranges}
+
+                        for label in ranges:
+                            os.makedirs(os.path.join(output_path, label), exist_ok = True)
+                            for r in ranges[label]:
+                                start_index = int(r[0] * target_frequency)
+                                end_index = int(r[1] * target_frequency)
+                                for i in range(start_index, end_index, num_samples):
+                                    if end_index - i >= num_samples:
+                                        data_to_write = {channels[channel]: data_per_channel[index][i:i + num_samples] for index, channel in enumerate(interesting_channel_indices)}
+                                        output_filename = os.path.splitext(os.path.basename(edf_file_path))[0] + "_" + str(i).rjust(7, '0') + "_" + str(num_samples) + ".pkl"
+                                        with open(os.path.join(output_path, label, output_filename), 'wb') as output_file:
+                                            pickle.dump(data_to_write, output_file, pickle.HIGHEST_PROTOCOL)
+                                            files_created += 1
+                                            if max_files is not None:
+                                                progress.update()
+                                                if files_created >= max_files:
+                                                    raise StopIteration()
             if max_files is None:
                 progress.update()
     except StopIteration:
@@ -241,6 +247,7 @@ if __name__ == "__main__":
                         args.frequency,
                         args.duration,
                         _get_ranges_for_labels,
+                        120,
                         None,
                         args.max_files)
 
@@ -253,5 +260,6 @@ if __name__ == "__main__":
                         args.frequency,
                         args.duration,
                         lambda csv_file_path, labels, channels, signal_length: {"non_seizure": _get_ranges_unlabeled(csv_file_path, labels, channels, signal_length)},
+                        120,
                         20,
                         args.max_files)
