@@ -63,6 +63,19 @@ def _inverted_ranges(ranges: list[tuple[int, int]], begin: float, end: float):
     return inverted
 
 
+def _eroded_ranges(ranges: list[tuple[int, int]], erode_by: float):
+    i = 0
+
+    while i < len(ranges):
+        ranges[i] = (ranges[i][0] + erode_by, ranges[i][1] - erode_by)
+        if ranges[i][0] >= ranges[i][1]:
+            del ranges[i]
+        else:
+            i += 1
+    
+    return ranges
+
+
 class EdfReader(object):
     def __init__(self, path: str):
         self.path = path
@@ -105,7 +118,7 @@ def _get_ranges_unlabeled(csv_file_path: str, _unused_labels: list[str], channel
 
     if not interesting_data.empty:
         ranges = list(zip(interesting_data['start_time'], interesting_data['stop_time']))
-        
+
         try:
             ranges = _merge_ranges(ranges)
             ranges = _inverted_ranges(ranges, 0, signal_length)
@@ -136,6 +149,7 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                         target_frequency: int,
                         signal_length_in_seconds: int,
                         extract_ranges_from_csv: Callable[[str, list[str], list[str], float], dict[str, list[float, float]]],
+                        erode_ranges_by_secs: float | None = None,
                         max_files: int | None = None):
     filenames_with_csv_and_edf = _filenames_of_edf_csv_pairs(input_path)
     csv_files = [os.path.join(input_path, x + ".csv") for x in filenames_with_csv_and_edf]
@@ -171,6 +185,9 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                     data_per_channel = [data[:min_signal_length] for data in data_per_channel]
 
                     ranges = extract_ranges_from_csv(csv_file_path, classes_to_extract, channels_to_extract, min_signal_length / target_frequency)
+
+                    if erode_ranges_by_secs is not None:
+                        ranges = {label: _eroded_ranges(ranges[label], erode_ranges_by_secs) for label in ranges}
 
                     for label in ranges:
                         os.makedirs(os.path.join(output_path, label), exist_ok = True)
@@ -214,7 +231,7 @@ if __name__ == "__main__":
     if args.max_files is not None and args.max_files < 1:
         print("Error: --max_files must be at least 1")
         quit()
-    
+
 
     # Extract samples for the requested channels and classes.
     prepare_eeg_dataset(args.input_path,
@@ -224,10 +241,11 @@ if __name__ == "__main__":
                         args.frequency,
                         args.duration,
                         _get_ranges_for_labels,
+                        None,
                         args.max_files)
 
     # Extract samples for the requested channels that do not belong to a class
-    # and put them in a "non_seizure" class.
+    # and put them in a class "non_seizure".
     prepare_eeg_dataset(args.input_path,
                         args.output_path,
                         channels_to_extract,
@@ -235,4 +253,5 @@ if __name__ == "__main__":
                         args.frequency,
                         args.duration,
                         lambda csv_file_path, labels, channels, signal_length: {"non_seizure": _get_ranges_unlabeled(csv_file_path, labels, channels, signal_length)},
+                        20,
                         args.max_files)
