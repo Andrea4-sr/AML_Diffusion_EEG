@@ -1,10 +1,10 @@
 import argparse
 from collections.abc import Callable
 import glob
+import numpy
 import os
 import pandas
 import pathlib
-import pickle
 import pyedflib
 import scipy
 import tqdm
@@ -188,6 +188,8 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                         erode_by_samples = erode_channels_by_secs * target_frequency
                         data_per_channel = [data[erode_by_samples:-erode_by_samples] for data in data_per_channel]
                         min_signal_length = min([len(data) for data in data_per_channel])
+                    
+                    data_per_channel = numpy.vstack(data_per_channel)
 
                     if min_signal_length >= num_samples:
                         ranges = extract_ranges_from_csv(csv_file_path, classes_to_extract, channels_to_extract, min_signal_length / target_frequency)
@@ -197,20 +199,26 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
 
                         for label in ranges:
                             os.makedirs(os.path.join(output_path, label), exist_ok = True)
+
                             for r in ranges[label]:
                                 start_index = int(r[0] * target_frequency)
                                 end_index = int(r[1] * target_frequency)
+
+                                if start_index < 0 or end_index >= min_signal_length:
+                                    print(f'Warning: {os.path.basename(csv_file_path)}, label {label}: Range [{r[0]} {r[1]}] ({start_index} {end_index}) is outside of signal range (0 {min_signal_length})')
+
                                 for i in range(start_index, end_index, num_samples):
-                                    if end_index - i >= num_samples:
-                                        data_to_write = {channels[channel]: data_per_channel[index][i:i + num_samples] for index, channel in enumerate(interesting_channel_indices)}
-                                        output_filename = os.path.splitext(os.path.basename(edf_file_path))[0] + "_" + str(i).rjust(7, '0') + "_" + str(num_samples) + ".pkl"
-                                        with open(os.path.join(output_path, label, output_filename), 'wb') as output_file:
-                                            pickle.dump(data_to_write, output_file, pickle.HIGHEST_PROTOCOL)
-                                            files_created += 1
-                                            if max_files is not None:
-                                                progress.update()
-                                                if files_created >= max_files:
-                                                    raise StopIteration()
+                                    if i + num_samples <= end_index and i + num_samples < min_signal_length:
+                                        data_to_write = data_per_channel[:, i:i + num_samples]
+                                        assert data_to_write.shape == (len(channels_to_extract), num_samples)
+                                        output_filename = os.path.splitext(os.path.basename(edf_file_path))[0] + "_" + str(i).rjust(7, '0') + "_" + str(num_samples) + ".npy"
+                                        numpy.save(os.path.join(output_path, label, output_filename), data_to_write)
+                                        files_created += 1
+
+                                        if max_files is not None:
+                                            progress.update()
+                                            if files_created >= max_files:
+                                                raise StopIteration()
             if max_files is None:
                 progress.update()
     except StopIteration:
