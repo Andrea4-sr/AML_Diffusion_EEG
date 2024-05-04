@@ -44,6 +44,25 @@ def _merge_ranges(ranges: list[tuple[int, int]]):
     return sorted_ranges
 
 
+def _inverted_ranges(ranges: list[tuple[int, int]], begin: float, end: float):
+    if len(ranges) == 0:
+        return [(begin, end)]
+    
+    inverted = []
+
+    if begin < ranges[0][0]:
+        inverted.append((begin, ranges[0][0]))
+
+    for i in range(len(ranges) - 1):
+        if ranges[i][1] < ranges[i + 1][0]:
+            inverted.append((ranges[i][1], ranges[i + 1][0]))
+    
+    if end > ranges[-1][1]:
+        inverted.append((ranges[-1][1], end))
+    
+    return inverted
+
+
 class EdfReader(object):
     def __init__(self, path: str):
         self.path = path
@@ -76,6 +95,24 @@ def _get_ranges_for_labels(csv_file_path: str, labels: list[str], channels: list
                 pass
     
     return ranges_for_labels
+
+
+def _get_ranges_unlabeled(csv_file_path: str, _unused_labels: list[str], channels: list[str], signal_length: float):
+    csv_data = pandas.read_csv(csv_file_path, delimiter = ",", skiprows = 5)
+    interesting_data = csv_data[csv_data['channel'].apply(lambda x: _has_interesting_channel(x, channels))]
+
+    ranges = []
+
+    if not interesting_data.empty:
+        ranges = list(zip(interesting_data['start_time'], interesting_data['stop_time']))
+        
+        try:
+            ranges = _merge_ranges(ranges)
+            ranges = _inverted_ranges(ranges, 0, signal_length)
+        except ValueError:
+            print(f"{csv_file_path}: Could not determine ranges for labels: {ranges}")
+    
+    return ranges
 
 
 def _normalize_channel_name(name: str):
@@ -175,9 +212,11 @@ if __name__ == "__main__":
     classes_to_extract = args.classes.split(",")
 
     if args.max_files is not None and args.max_files < 1:
-        print("Error: --max_files must be bigger than 0")
+        print("Error: --max_files must be at least 1")
         quit()
+    
 
+    # Extract samples for the requested channels and classes.
     prepare_eeg_dataset(args.input_path,
                         args.output_path,
                         channels_to_extract,
@@ -185,4 +224,15 @@ if __name__ == "__main__":
                         args.frequency,
                         args.duration,
                         _get_ranges_for_labels,
+                        args.max_files)
+
+    # Extract samples for the requested channels that do not belong to a class
+    # and put them in a "non_seizure" class.
+    prepare_eeg_dataset(args.input_path,
+                        args.output_path,
+                        channels_to_extract,
+                        classes_to_extract,
+                        args.frequency,
+                        args.duration,
+                        lambda csv_file_path, labels, channels, signal_length: {"non_seizure": _get_ranges_unlabeled(csv_file_path, labels, channels, signal_length)},
                         args.max_files)
