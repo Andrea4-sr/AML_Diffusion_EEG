@@ -2,6 +2,7 @@ import argparse
 from collections.abc import Callable
 import glob
 import numpy
+import numpy.typing
 import os
 import pandas
 import pathlib
@@ -143,12 +144,12 @@ def _resample_signal(signal, source_frequency: float, target_frequency: float):
 
 
 def prepare_eeg_dataset(input_path: pathlib.Path,
-                        output_path: pathlib.Path,
                         channels_to_extract: list[str],
                         classes_to_extract: list[str],
                         target_frequency: int,
                         signal_length_in_seconds: int,
                         extract_ranges_from_csv: Callable[[str, list[str], list[str], float], dict[str, list[float, float]]],
+                        do_with_samples: Callable[[numpy.typing.NDArray, str, str, int, int], int],
                         erode_channels_by_secs: float | None = None,
                         erode_ranges_by_secs: float | None = None,
                         max_files: int | None = None):
@@ -159,7 +160,6 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
     num_samples = target_frequency * signal_length_in_seconds
     files_created = 0
 
-    os.makedirs(output_path, exist_ok = True)
     progress = tqdm.tqdm(total = len(edf_files) if max_files is None else max_files, unit = " files")
 
     try:
@@ -198,8 +198,6 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                             ranges = {label: _eroded_ranges(ranges[label], erode_ranges_by_secs) for label in ranges}
 
                         for label in ranges:
-                            os.makedirs(os.path.join(output_path, label), exist_ok = True)
-
                             for r in ranges[label]:
                                 start_index = int(r[0] * target_frequency)
                                 end_index = int(r[1] * target_frequency)
@@ -211,9 +209,8 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                                     if i + num_samples <= end_index and i + num_samples < min_signal_length:
                                         data_to_write = data_per_channel[:, i:i + num_samples]
                                         assert data_to_write.shape == (len(channels_to_extract), num_samples)
-                                        output_filename = os.path.splitext(os.path.basename(edf_file_path))[0] + "_" + str(i).rjust(7, '0') + "_" + str(num_samples) + ".npy"
-                                        numpy.save(os.path.join(output_path, label, output_filename), data_to_write)
-                                        files_created += 1
+
+                                        files_created += do_with_samples(data_to_write, os.path.splitext(os.path.basename(edf_file_path))[0], label, i, i + num_samples)
 
                                         if max_files is not None:
                                             progress.update()
@@ -225,6 +222,13 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
         pass
     
     progress.close()
+
+
+def _dump_sample(output_path: str, signal_data: numpy.typing.NDArray, source_filename: str, label: str, start_index: int, end_index: int) -> int:
+    os.makedirs(os.path.join(output_path, label), exist_ok = True)
+    output_filename = source_filename + "_" + str(start_index).rjust(7, '0') + "_" + str(end_index - start_index) + ".npy"
+    numpy.save(os.path.join(output_path, label, output_filename), signal_data)
+    return 1
 
 
 if __name__ == "__main__":
@@ -247,14 +251,16 @@ if __name__ == "__main__":
         quit()
 
 
+    os.makedirs(args.output_path, exist_ok = True)
+
     # Extract samples for the requested channels and classes.
     prepare_eeg_dataset(args.input_path,
-                        args.output_path,
                         channels_to_extract,
                         classes_to_extract,
                         args.frequency,
                         args.duration,
                         _get_ranges_for_labels,
+                        lambda signal_data, source_filename, label, start_index, end_index: _dump_sample(args.output_path, signal_data, source_filename, label, start_index, end_index),
                         120,
                         None,
                         args.max_files)
@@ -262,12 +268,12 @@ if __name__ == "__main__":
     # Extract samples for the requested channels that do not belong to a class
     # and put them in a class "non_seizure".
     prepare_eeg_dataset(args.input_path,
-                        args.output_path,
                         channels_to_extract,
                         classes_to_extract,
                         args.frequency,
                         args.duration,
                         lambda csv_file_path, labels, channels, signal_length: {"non_seizure": _get_ranges_unlabeled(csv_file_path, labels, channels, signal_length)},
+                        lambda signal_data, source_filename, label, start_index, end_index: _dump_sample(args.output_path, signal_data, source_filename, label, start_index, end_index),
                         120,
                         20,
                         args.max_files)
