@@ -7,6 +7,7 @@ from multiprocessing import cpu_count
 
 import torch
 from torch import nn, einsum, Tensor
+import torch.nn.init as init
 import torch.nn.functional as F
 from torch.cuda.amp import autocast
 from torch.optim import Adam
@@ -68,6 +69,9 @@ def normalize_to_neg_one_to_one(img):
 def unnormalize_to_zero_to_one(t):
     return (t + 1) * 0.5
 
+def standarize(t):
+    return (t - t.mean()) / t.std()
+
 # data
 
 class Dataset1D(Dataset):
@@ -83,14 +87,6 @@ class Dataset1D(Dataset):
 
 # small helper modules
 
-class Residual(nn.Module):
-    def __init__(self, fn):
-        super().__init__()
-        self.fn = fn
-
-    def forward(self, x, *args, **kwargs):
-        return self.fn(x, *args, **kwargs) + x
-
 def Upsample(dim, dim_out = None):
     return nn.Sequential(
         nn.Upsample(scale_factor = 2, mode = 'nearest'),
@@ -100,13 +96,27 @@ def Upsample(dim, dim_out = None):
 def Downsample(dim, dim_out = None):
     return nn.Conv1d(dim, default(dim_out, dim), 4, 2, 1)
 
+class Residual(nn.Module):
+    def __init__(self, fn):
+        super().__init__()
+        self.fn = fn
+
+    def forward(self, x, *args, **kwargs):
+        if type(x) == tuple:
+            return self.fn(x, *args, **kwargs) + x[0]
+        else:
+            return self.fn(x, *args, **kwargs) + x
+    
 class RMSNorm(nn.Module):
     def __init__(self, dim):
         super().__init__()
         self.g = nn.Parameter(torch.ones(1, dim, 1))
 
     def forward(self, x):
-        return F.normalize(x, dim = 1) * self.g * (x.shape[1] ** 0.5)
+        if type(x) == tuple:
+            return (F.normalize(x[0], dim = 1) * self.g * (x[0].shape[1] ** 0.5), x[1])
+        else:
+            return F.normalize(x, dim = 1) * self.g * (x.shape[1] ** 0.5)
 
 class PreNorm(nn.Module):
     def __init__(self, dim, fn):
@@ -226,6 +236,45 @@ class LinearAttention(nn.Module):
         out = torch.einsum('b h d e, b h d n -> b h e n', context, q)
         out = rearrange(out, 'b h c n -> b (h c) n', h = self.heads)
         return self.to_out(out)
+    
+class LinearCrossAttention(nn.Module):
+    def __init__(self, dim, heads=4, dim_head=32):
+        super().__init__()
+        self.scale = dim_head ** -0.5
+        self.heads = heads
+        hidden_dim = dim_head * heads
+        
+        self.to_q = nn.Conv1d(dim, hidden_dim, 1, bias=False)
+        self.to_kv = nn.Conv1d(dim, hidden_dim * 2, 1, bias=False)
+        
+        self.to_out = nn.Sequential(
+            nn.Conv1d(hidden_dim, dim, 1),
+            RMSNorm(dim)
+        )
+    
+    def forward(self, x):
+        x, context = x
+        # print('x',x.shape)
+        # print('context',context.shape)
+        assert x.shape[1] == context.shape[1]
+
+        b, c, n = x.shape
+        _, _, m = context.shape
+
+        q = self.to_q(x)
+        kv = self.to_kv(context).chunk(2, dim=1)
+        k, v = map(lambda t: rearrange(t, 'b (h d) m -> b h d m', h=self.heads), kv)
+        q = rearrange(q, 'b (h d) n -> b h d n', h=self.heads)
+
+        q = q * self.scale
+        k = k.softmax(dim=-1)
+
+        context = torch.einsum('b h d m, b h e m -> b h d e', k, v)
+        out = torch.einsum('b h d e, b h d n -> b h e n', context, q)
+        out = rearrange(out, 'b h c n -> b (h c) n', h=self.heads)
+
+        # print('out',self.to_out(out).shape)
+        return self.to_out(out)
 
 class Attention(nn.Module):
     def __init__(self, dim, heads = 4, dim_head = 32):
@@ -263,7 +312,8 @@ class Unet1D(nn.Module):
         channels = 3,
         self_condition = False,
         condition = False,
-        condition_type = 'concat', # or 'append' or 'attn' or 'add'
+        condition_classes = 3,
+        condition_type = 'input_concat', # 'input_concat', 'input_add', 'attn', 'attn_mlp', 'attn_embed', 'time_mlp'
         resnet_block_groups = 8,
         learned_variance = False,
         learned_sinusoidal_cond = False,
@@ -280,9 +330,10 @@ class Unet1D(nn.Module):
         self.channels = channels
         self.self_condition = self_condition
         self.condition = condition
-        self.condition_type = condition_type
+        self.condition_type = condition_type if condition else ''
+        self.condition_classes = condition_classes
         input_channels = channels * (2 if self_condition or condition else 1)
-        input_channels -= 1 if condition_type in ['attn', 'add', 'append'] else 0
+        input_channels -= 1 if self.condition_type in ['attn', 'attn_mlp', 'attn_embed', 'input_add', 'input_append', 'time_mlp'] else 0
 
         init_dim = default(init_dim, dim)
         self.init_conv = nn.Conv1d(input_channels, init_dim, 7, padding = 3)
@@ -298,16 +349,24 @@ class Unet1D(nn.Module):
 
         self.random_or_learned_sinusoidal_cond = learned_sinusoidal_cond or random_fourier_features
 
+        # ----- conditional input -----
+        if self.condition and self.condition_type == 'time_mlp':
+            conditional_input_dim = dim
+            self.time_mlp_embeddings = nn.Embedding(self.condition_classes, conditional_input_dim, _freeze=True)
+        else:
+            conditional_input_dim = 0
+            self.time_mlp_embeddings = None
+        # -----------------------------
+
         if self.random_or_learned_sinusoidal_cond:
-            sinu_pos_emb = RandomOrLearnedSinusoidalPosEmb(learned_sinusoidal_dim, random_fourier_features)
+            self.sinu_pos_emb = RandomOrLearnedSinusoidalPosEmb(learned_sinusoidal_dim, random_fourier_features)
             fourier_dim = learned_sinusoidal_dim + 1
         else:
-            sinu_pos_emb = SinusoidalPosEmb(dim, theta = sinusoidal_pos_emb_theta)
+            self.sinu_pos_emb = SinusoidalPosEmb(dim, theta = sinusoidal_pos_emb_theta)
             fourier_dim = dim
 
         self.time_mlp = nn.Sequential(
-            sinu_pos_emb,
-            nn.Linear(fourier_dim, time_dim),
+            nn.Linear(fourier_dim + conditional_input_dim, time_dim),
             nn.GELU(),
             nn.Linear(time_dim, time_dim)
         )
@@ -324,7 +383,9 @@ class Unet1D(nn.Module):
             self.downs.append(nn.ModuleList([
                 block_klass(dim_in, dim_in, time_emb_dim = time_dim),
                 block_klass(dim_in, dim_in, time_emb_dim = time_dim),
-                Residual(PreNorm(dim_in, LinearAttention(dim_in))),
+                Residual(PreNorm(dim_in, LinearAttention(dim_in))) if not self.condition_type.__contains__('attn') else Residual(PreNorm(dim_in, LinearCrossAttention(dim_in))),
+                nn.Linear(1, dim_in) if  self.condition_type == 'attn_mlp' else None,
+                nn.Embedding(self.condition_classes, dim_in, _freeze=True) if  self.condition_type == 'attn_embed' else None,
                 Downsample(dim_in, dim_out) if not is_last else nn.Conv1d(dim_in, dim_out, 3, padding = 1)
             ]))
 
@@ -339,7 +400,9 @@ class Unet1D(nn.Module):
             self.ups.append(nn.ModuleList([
                 block_klass(dim_out + dim_in, dim_out, time_emb_dim = time_dim),
                 block_klass(dim_out + dim_in, dim_out, time_emb_dim = time_dim),
-                Residual(PreNorm(dim_out, LinearAttention(dim_out))),
+                Residual(PreNorm(dim_out, LinearAttention(dim_out))) if not self.condition_type.__contains__('attn') else Residual(PreNorm(dim_out, LinearCrossAttention(dim_out))),
+                nn.Linear(1, dim_out) if self.condition_type == 'attn_mlp' else None,
+                nn.Embedding(self.condition_classes, dim_out, _freeze=True) if self.condition_type == 'attn_embed' else None,
                 Upsample(dim_out, dim_in) if not is_last else  nn.Conv1d(dim_out, dim_in, 3, padding = 1)
             ]))
 
@@ -350,39 +413,72 @@ class Unet1D(nn.Module):
         self.final_conv = nn.Conv1d(dim, self.out_dim, 1)
 
     def forward(self, x, time, x_self_cond = None, x_cond = None):
+
+        x, x_cond = x
+
         if self.self_condition:
             x_self_cond = default(x_self_cond, lambda: torch.zeros_like(x))
             x = torch.cat((x_self_cond, x), dim = 1)
 
+        # ----- conditional input -----
         if self.condition:
-            if self.condition_type == 'concat':
-                x_cond = torch.full_like(x, x_cond.item() if isinstance(x_cond, Tensor) else x_cond)
-                x = torch.cat((x_cond, x), dim = 1)
-            elif self.condition_type == 'add':
-                x_cond = torch.full_like(x, x_cond.item() if isinstance(x_cond, Tensor) else x_cond)
-                x = x + x_cond
-            elif self.condition_type == 'append':
-                x_cond = x_cond if isinstance(x_cond, Tensor) else torch.tensor(x_cond, device = x.device)
-                x_cond = x_cond.view(1, 1, 1).repeat(x.size(0), 1, 1)
-                x = torch.cat((x, x_cond), dim=-1)
+            if self.condition_type == 'input_concat':
+                x_cond_expanded = x_cond.unsqueeze(2).expand(-1, -1, x.shape[2])
+                x = torch.cat((x_cond_expanded, x), dim=1)
 
-        # print('pre x',x.shape)  
+            elif self.condition_type == 'input_add':
+                x_cond_expanded = x_cond.unsqueeze(-1).expand(-1, -1, x.shape[2])
+                x = x + x_cond_expanded
+
+            elif self.condition_type == 'attn':
+                context = x_cond.unsqueeze(1)
+
+            elif self.condition_type == 'attn_mlp' or self.condition_type == 'attn_embed':
+                context = x_cond
+
+            elif self.condition_type == 'time_mlp':
+                context = self.time_mlp_embeddings(x_cond.to(torch.long)).squeeze(1)
+
+        else:
+            context = None
+        # -----------------------------
 
         x = self.init_conv(x)
         r = x.clone()
 
-        # print('x',x.shape)   
+        time = self.sinu_pos_emb(time)
+
+        # ----- conditional input -----
+        time = torch.cat((time, context), dim = -1) if self.condition_type == 'time_mlp' else time
+        # -----------------------------
 
         t = self.time_mlp(time)
 
         h = []
 
-        for block1, block2, attn, downsample in self.downs:
+        for block1, block2, attn, attn_mlp, attn_embed, downsample in self.downs:
             x = block1(x, t)
             h.append(x)
 
             x = block2(x, t)
-            x = attn(x)
+
+            # ----- conditional attention -----
+            if self.condition_type == 'attn':
+                x = attn((x, context.repeat(1, x.shape[1], 1)))
+            elif self.condition_type == 'attn_mlp':
+                # print(context)
+                context_embedded = attn_mlp(context)
+                # print('context',context.unsqueeze(-1))
+                x = attn((x, context_embedded.unsqueeze(-1)))
+            elif self.condition_type == 'attn_embed':
+                # print(context.to(torch.long))
+                context_embedded = attn_embed(context.to(torch.long))
+                # print('context',attn_embed.weight)
+                x = attn((x, context_embedded.squeeze(1).unsqueeze(-1)))
+            else:
+                x = attn(x)
+            # ---------------------------------
+            
             h.append(x)
 
             x = downsample(x)
@@ -390,20 +486,37 @@ class Unet1D(nn.Module):
         x = self.mid_block1(x, t)
         x = self.mid_attn(x)
         x = self.mid_block2(x, t)
-
-        for block1, block2, attn, upsample in self.ups:
+        
+        for block1, block2, attn, attn_mlp, attn_embed, upsample in self.ups:
             x = torch.cat((x, h.pop()), dim = 1)
             x = block1(x, t)
 
             x = torch.cat((x, h.pop()), dim = 1)
             x = block2(x, t)
-            x = attn(x)
+
+            # ----- conditional attention -----
+            if self.condition_type == 'attn':
+                x = attn((x, context.repeat(1, x.shape[1], 1)))
+            elif self.condition_type == 'attn_mlp':
+                # print(context)
+                context_embedded = attn_mlp(context)
+                # print('context',context.unsqueeze(-1))
+                x = attn((x, context_embedded.unsqueeze(-1)))
+            elif self.condition_type == 'attn_embed':
+                # print(context.to(torch.long))
+                context_embedded = attn_embed(context.to(torch.long))
+                # print('context',attn_embed.weight)
+                x = attn((x, context_embedded.squeeze(1).unsqueeze(-1)))
+            else:
+                x = attn(x)
+            # ---------------------------------
 
             x = upsample(x)
 
         x = torch.cat((x, r), dim = 1)
 
         x = self.final_res_block(x, t)
+        # print('\n\nx',self.final_conv(x).shape)
         return self.final_conv(x)
 
 # gaussian diffusion trainer class
@@ -550,6 +663,7 @@ class GaussianDiffusion1D(nn.Module):
         )
 
     def q_posterior(self, x_start, x_t, t):
+        if type(x_t) == tuple: x_t, _ = x_t
         posterior_mean = (
             extract(self.posterior_mean_coef1, t, x_t.shape) * x_start +
             extract(self.posterior_mean_coef2, t, x_t.shape) * x_t
@@ -595,6 +709,7 @@ class GaussianDiffusion1D(nn.Module):
 
     @torch.no_grad()
     def p_sample(self, x, t: int, x_self_cond = None, clip_denoised = True):
+        if type(x) == tuple: x, _ = x # Conditional
         b, *_, device = *x.shape, x.device
         batched_times = torch.full((b,), t, device = x.device, dtype = torch.long)
         model_mean, _, model_log_variance, x_start = self.p_mean_variance(x = x, t = batched_times, x_self_cond = x_self_cond, clip_denoised = clip_denoised)
@@ -911,10 +1026,10 @@ if __name__ == "__main__":
         dim_mults=(1, 2, 4, 8),
         channels=1,
         condition=True,
-        condition_type='concat',
+        condition_type='time_mlp',  # 'input_concat', 'input_add', 'attn', 'attn_mlp', 'attn_embed', 'time_mlp'
     )
 
-    backbone.forward(x = torch.randn(1, 1, 1000), x_cond=2, time=torch.tensor([4]))
+    backbone.forward(x = (torch.randn(2, 1, 1000), torch.randint(0,2,(2, 1), dtype=torch.float32)), time=torch.tensor([999, 999], dtype=torch.float32))
     exit()
 
     model = GaussianDiffusion1D(
