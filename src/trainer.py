@@ -266,6 +266,7 @@ class Trainer1D(object):
                         total_loss += loss.item()
 
                         if exists(self.wandb) and self.step % 20 == 0: self.wandb.log({'loss': loss})
+                        if exists(self.wandb) and self.step % 20 == 0: self.wandb.log({'logloss': torch.log(loss)})
 
                     self.accelerator.backward(loss)
 
@@ -357,11 +358,13 @@ class Trainer1D(object):
                             with torch.no_grad():
                                 milestone = self.step // self.save_and_sample_every
                                 batches = num_to_groups(self.num_samples, self.batch_size)
-                                all_samples_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=n), batches))
+                                all_samples_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=1), batches))
 
-                            all_samples = torch.cat(all_samples_list, dim = 0)
-
-                            torch.save(all_samples, str(self.results_folder / f'sample-{milestone}.png'))
+                            plt.figure(figsize=(10, 5))
+                            plt.plot(all_samples_list[0].squeeze().cpu().numpy())
+                            plt.savefig(str(self.results_folder / f'{self.step}_sample.png'))
+                            plt.close()
+                            if exists(self.wandb): self.wandb.log({f"pred": [self.wandb.Image(os.path.join(self.results_folder, f'{self.step}_sample.png'), caption=f"Prediction step {self.step}")]})
 
                         self.save(milestone)
 
