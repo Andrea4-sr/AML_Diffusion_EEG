@@ -835,6 +835,12 @@ class GaussianDiffusion1D(nn.Module):
         else:
             raise ValueError(f'unknown objective {self.objective}')
 
+        # --- pad target and model_out for loss calculation ---
+        pad_size = 10
+        model_out = torch.cat([torch.zeros_like(model_out[:, :, :pad_size]), model_out, torch.zeros_like(model_out[:, :, -pad_size:])], dim=2)
+        target = torch.cat([torch.zeros_like(target[:, :, :pad_size]), target, torch.zeros_like(target[:, :, -pad_size:])], dim=2)
+        # -----------------------------------------------------
+
         loss = F.mse_loss(model_out, target, reduction = 'none')
         loss = reduce(loss, 'b ... -> b', 'mean')
 
