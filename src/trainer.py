@@ -7,6 +7,7 @@ from multiprocessing import cpu_count
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.signal import butter, filtfilt, iirnotch
 
 import torch
 from torch import nn, einsum, Tensor
@@ -60,6 +61,18 @@ def convert_image_to_fn(img_type, image):
         return image.convert(img_type)
     return image
 
+def _butter_bandpass(lowcut, highcut, fs, order=5):
+    nyq = 0.5 * fs
+    low = lowcut / nyq
+    high = highcut / nyq
+    b, a = butter(order, [low, high], btype='band')
+    return b, a
+
+def _bandpass_filter(data, lowcut, highcut, fs, order=5):
+    b, a = _butter_bandpass(lowcut, highcut, fs, order=order)
+    y = filtfilt(b, a, data)
+    return y
+
 # normalization functions
 
 def normalize_to_neg_one_to_one(img):
@@ -73,17 +86,6 @@ def standarize(t):
 
 # data
 
-# class Dataset1D(Dataset):
-#     def __init__(self, tensor: Tensor):
-#         super().__init__()
-#         self.tensor = tensor.clone()
-
-#     def __len__(self):
-#         return len(self.tensor)
-
-#     def __getitem__(self, idx):
-#         return self.tensor[idx].clone()
-
 def load_data_and_labels(base_path, class_labels):
     data, labels = [], []
     for class_name, label in class_labels.items():
@@ -94,7 +96,39 @@ def load_data_and_labels(base_path, class_labels):
                 sample = np.load(file_path)
                 data.append(sample.astype(np.float32))
                 labels.append(np.float32(label))
+    
+    data = np.array(data)
+    labels = np.array(labels)
+    assert np.unique(labels).all() in list(class_labels.values())
+
     return data, labels
+
+
+def load_sleep_data_and_labels(base_path, class_labels):
+    path_segments = os.path.join(base_path, 'segments')
+    path_labels = os.path.join(base_path, 'labels')
+    
+    combined_data = []
+    combined_labels = []
+    
+    filenames = [f for f in os.listdir(path_segments) if os.path.isfile(os.path.join(path_labels, f))]
+    
+    for filename in tqdm(filenames):
+        segment = np.load(os.path.join(path_segments, filename))
+        label = np.load(os.path.join(path_labels, filename))
+
+        for idx, lab in enumerate(label):
+            if int(lab) in list(class_labels.values()):
+                combined_data.append(segment[idx, 1, :1000].astype(np.float32))
+                combined_labels.append(lab.astype(np.float32))
+    
+    combined_data = np.array([_bandpass_filter(signal, 0.5, 40, 250) for signal in combined_data])
+    combined_labels = np.array(combined_labels)
+    assert np.unique(combined_labels).all() in list(class_labels.values())
+
+    return combined_data, combined_labels
+
+
 
 class Dataset1D(Dataset):
     def __init__(self, base_path, class_labels, no_classes = False, test = False):
@@ -118,6 +152,42 @@ class Dataset1D(Dataset):
             return self.data[idx]
         else:
             return self.data[idx], self.labels[idx]
+        
+class Combined_Dataset1D(Dataset):
+    def __init__(self, base_path, class_labels, no_classes = False, test = False):
+        self.no_classes = no_classes
+        if test:
+            self.data = np.random.randn(99739, 1000)
+            self.labels = np.random.randint(0, 3, (99739, 1))
+        else:
+            self.seizure_data, self.seizure_labels = load_data_and_labels(base_path, class_labels)
+            self.sleep_data, self.sleep_labels = load_sleep_data_and_labels('data/sleep_data', {'wake': 0.0})
+
+            # print(np.squeeze(self.seizure_data).shape, self.sleep_data[:self.seizure_data.shape[0]].shape)
+            # print(self.seizure_labels.shape, self.sleep_labels[:self.seizure_data.shape[0]].shape)
+
+            self.data = np.vstack([np.squeeze(self.seizure_data), self.sleep_data[:self.seizure_data.shape[0]]])
+            self.labels = np.vstack([self.seizure_labels.reshape(-1, 1), self.sleep_labels[:self.seizure_data.shape[0]].reshape(-1, 1)])
+
+            self.data = (self.data - self.data.min()) / (self.data.max() - self.data.min())
+
+        self.data = torch.from_numpy(self.data).unsqueeze(1).to(torch.float32)
+        self.labels = torch.from_numpy(self.labels).to(torch.float32)
+
+        # print(self.data.shape, self.labels.shape)
+        # exit()
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        if self.no_classes:
+            return self.data[idx]
+        else:
+            return self.data[idx], self.labels[idx]
+        
+
+# --------------------------------
 
 class Trainer1D(object):
     def __init__(
@@ -140,6 +210,7 @@ class Trainer1D(object):
         split_batches = True,
         max_grad_norm = 1.,
         conditional = False,
+        conditional_classes = {'non_seizure': 0.0},
         wandb = None,
     ):
         super().__init__()
@@ -147,6 +218,7 @@ class Trainer1D(object):
         # wandb
 
         self.conditional = conditional
+        self.conditional_classes = conditional_classes
 
         # wandb
 
@@ -261,7 +333,7 @@ class Trainer1D(object):
                         data = next(self.dl).to(device)
 
                     with self.accelerator.autocast():
-                        loss = self.model(data)
+                        loss = self.model(data) if not self.conditional else self.model(data, label = labels)
                         loss = loss / self.gradient_accumulate_every
                         total_loss += loss.item()
 
@@ -284,39 +356,6 @@ class Trainer1D(object):
                 if accelerator.is_main_process:
                     self.ema.update()
 
-                    # if self.step == 100:
-                    #     self.ema.ema_model.eval()
-
-                    #     with torch.no_grad():
-                    #         batches = num_to_groups(self.num_samples, self.batch_size)
-                    #         all_samples_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=1, label=torch.tensor([0], dtype=torch.float32)), batches))
-
-                    #     plt.figure(figsize=(10, 5))
-                    #     plt.plot(all_samples_list[0].squeeze().cpu().numpy())
-                    #     plt.savefig(str(self.results_folder / f'{self.step}_sample_0.png'))
-                    #     plt.close()
-                    #     if exists(self.wandb): self.wandb.log({"start_pred": [self.wandb.Image(os.path.join(self.results_folder, f'{self.step}_sample_0.png'), caption="Start Prediction 0")]})
-
-                    #     with torch.no_grad():
-                    #         batches = num_to_groups(self.num_samples, self.batch_size)
-                    #         all_samples_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=1, label=torch.tensor([1], dtype=torch.float32)), batches))
-
-                    #     plt.figure(figsize=(10, 5))
-                    #     plt.plot(all_samples_list[0].squeeze().cpu().numpy())
-                    #     plt.savefig(str(self.results_folder / f'{self.step}_sample_1.png'))
-                    #     plt.close()
-                    #     if exists(self.wandb): self.wandb.log({"start_pred": [self.wandb.Image(os.path.join(self.results_folder, f'{self.step}_sample_1.png'), caption="Start Prediction 1")]})
-
-                    #     with torch.no_grad():
-                    #         batches = num_to_groups(self.num_samples, self.batch_size)
-                    #         all_samples_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=1, label=torch.tensor([2], dtype=torch.float32)), batches))
-
-                    #     plt.figure(figsize=(10, 5))
-                    #     plt.plot(all_samples_list[0].squeeze().cpu().numpy())
-                    #     plt.savefig(str(self.results_folder / f'{self.step}_sample_2.png'))
-                    #     plt.close()
-                    #     if exists(self.wandb): self.wandb.log({"start_pred": [self.wandb.Image(os.path.join(self.results_folder, f'{self.step}_sample_2.png'), caption="Start Prediction 2")]})
-
                     if self.step != 0 and self.step % self.save_and_sample_every == 0:
                         self.ema.ema_model.eval()
 
@@ -324,35 +363,15 @@ class Trainer1D(object):
                             with torch.no_grad():
                                 milestone = self.step // self.save_and_sample_every
                                 batches = num_to_groups(self.num_samples, self.batch_size)
-                                all_samples_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=1, label=torch.tensor([0], dtype=torch.float32)), batches))
 
-                            plt.figure(figsize=(10, 5))
-                            plt.plot(all_samples_list[0].squeeze().cpu().numpy())
-                            plt.savefig(str(self.results_folder / f'{self.step}_sample_0.png'))
-                            plt.close()
-                            if exists(self.wandb): self.wandb.log({f"pred 0": [self.wandb.Image(os.path.join(self.results_folder, f'{self.step}_sample_0.png'), caption=f"Prediction 0 step {self.step}")]})
+                                for _, (key, value) in enumerate(self.conditional_classes.items()):
+                                    all_samples_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=1, label=torch.tensor([value], dtype=torch.float32).unsqueeze(0).to(device)), batches))
 
-                            with torch.no_grad():
-                                milestone = self.step // self.save_and_sample_every
-                                batches = num_to_groups(self.num_samples, self.batch_size)
-                                all_samples_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=1, label=torch.tensor([1], dtype=torch.float32)), batches))
-
-                            plt.figure(figsize=(10, 5))
-                            plt.plot(all_samples_list[0].squeeze().cpu().numpy())
-                            plt.savefig(str(self.results_folder /  f'{self.step}_sample_1.png'))
-                            plt.close()
-                            if exists(self.wandb): self.wandb.log({f"pred 1": [self.wandb.Image(os.path.join(self.results_folder, f'{self.step}_sample_1.png'), caption=f"Prediction 1 step {self.step}")]})
-
-                            with torch.no_grad():
-                                milestone = self.step // self.save_and_sample_every
-                                batches = num_to_groups(self.num_samples, self.batch_size)
-                                all_samples_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=1, label=torch.tensor([2], dtype=torch.float32)), batches))
-
-                            plt.figure(figsize=(10, 5))
-                            plt.plot(all_samples_list[0].squeeze().cpu().numpy())
-                            plt.savefig(str(self.results_folder / f'{self.step}_sample_2.png'))
-                            plt.close()
-                            if exists(self.wandb): self.wandb.log({f"pred 2": [self.wandb.Image(os.path.join(self.results_folder, f'{self.step}_sample_2.png'), caption=f"Prediction 2 step {self.step}")]})
+                                    plt.figure(figsize=(10, 5))
+                                    plt.plot(all_samples_list[0].squeeze().cpu().numpy()) # [10:-10]
+                                    plt.savefig(str(self.results_folder / f'{self.step}_sample_{key}.png'))
+                                    plt.close()
+                                    if exists(self.wandb): self.wandb.log({f"pred {key}": [self.wandb.Image(os.path.join(self.results_folder, f'{self.step}_sample_{key}.png'), caption=f"Prediction {key} step {self.step}")]})
 
                         else:
                             with torch.no_grad():
@@ -366,8 +385,14 @@ class Trainer1D(object):
                             plt.close()
                             if exists(self.wandb): self.wandb.log({f"pred": [self.wandb.Image(os.path.join(self.results_folder, f'{self.step}_sample.png'), caption=f"Prediction step {self.step}")]})
 
-                        self.save(milestone)
-
                 pbar.update(1)
 
+        self.save(milestone)
+
         accelerator.print('training complete')
+
+
+if __name__ == '__main__':
+
+    # data = load_sleep_data_and_labels('data/sleep_data', {'wake': 0.0})
+    dataset = Combined_Dataset1D('data/train_250hz_05_70_n60_CZ', class_labels={'fnsz': 1.0}, test=False)
