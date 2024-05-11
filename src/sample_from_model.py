@@ -25,16 +25,17 @@ def sample_from_model(model_path, num_samples=1, label=None, output_directory=No
     )
 
     model.load_state_dict(torch.load(model_path)['model'], strict=True)
-    model.eval().cuda()
+    model.eval().cuda() if torch.cuda.is_available() else model.eval().cpu()
+
+    label_tensor = torch.full((num_samples,), label, dtype=torch.float32).unsqueeze(1)
+    label_tensor = label_tensor.cuda() if torch.cuda.is_available() else label_tensor.cpu()
 
     # total_params = sum(p.numel() for p in model.parameters())
     # print(f"Total number of parameters: {total_params}")
 
     with torch.no_grad():
-        if label == 0:
-            samples = model.sample(batch_size=num_samples, label=torch.zeros([num_samples], dtype=torch.float32).cuda().unsqueeze(1))
-        elif label == 1:
-            samples = model.sample(batch_size=num_samples, label=torch.ones([num_samples], dtype=torch.float32).cuda().unsqueeze(1))
+        if label is not None:
+            samples = model.sample(batch_size=num_samples, label=label_tensor)
         else:
             samples = model.sample(batch_size=num_samples)
 
