@@ -27,14 +27,13 @@ def sample_from_model(model_path, num_samples=1, label=None, output_directory=No
     model.load_state_dict(torch.load(model_path)['model'], strict=True)
     model.eval().cuda() if torch.cuda.is_available() else model.eval().cpu()
 
-    label_tensor = torch.full((num_samples,), label, dtype=torch.float32).unsqueeze(1)
-    label_tensor = label_tensor.cuda() if torch.cuda.is_available() else label_tensor.cpu()
-
     # total_params = sum(p.numel() for p in model.parameters())
     # print(f"Total number of parameters: {total_params}")
 
     with torch.no_grad():
         if label is not None:
+            label_tensor = torch.full((num_samples,), label, dtype=torch.float32).unsqueeze(1)
+            label_tensor = label_tensor.cuda() if torch.cuda.is_available() else label_tensor.cpu()
             samples = model.sample(batch_size=num_samples, label=label_tensor)
         else:
             samples = model.sample(batch_size=num_samples)
@@ -56,8 +55,8 @@ if __name__ == "__main__":
     # model = "results\+ comb long 2 class Unet1D attn mlp - pred_x0\model-50.pt" # ************ Too noisy healthy data
     model = "results\++ 2 Unet1D attn mlp - pred_x0\model-15.pt" # ************ This one is good !
 
-    seizure_samples = sample_from_model(model, num_samples=5, label=1, output_directory=None)
-    healthy_samples = sample_from_model(model, num_samples=5, label=0, output_directory=None)
+    seizure_samples = sample_from_model(model, num_samples=5, label=None, output_directory=None)
+    healthy_samples = sample_from_model(model, num_samples=5, label=5, output_directory=None)
 
     plt.figure(figsize=(10, 20)) 
     for i in range(4):
