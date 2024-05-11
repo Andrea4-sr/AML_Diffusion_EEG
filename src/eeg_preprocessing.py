@@ -97,9 +97,9 @@ class EEGPreprocessor:
     def __init__(self, data): #resample to 250Hz
         self.data = data
 
-    def bandpass_fitler(self, data, lowcut, highcut):
+    def bandpass_fitler(self, data, sampling_rate, lowcut, highcut):
 
-        nyq = 0.5*self.sampling_rate
+        nyq = 0.5 * sampling_rate
         low = lowcut/nyq # lowcut 0.5Hz
         high = highcut/nyq #highcut 60hz
         order = 2
