@@ -61,8 +61,8 @@ def evaluate_classifier(model, dataset):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'Evaluate a classifier model based on the provided dataset.')
-    parser.add_argument('model_path', type = pathlib.Path, help = 'Path to the model dump file')
-    parser.add_argument('dataset_path', type = pathlib.Path, help = 'Path to the dataset')
+    parser.add_argument('--model_path', type = pathlib.Path, help = 'Path to the model dump file')
+    parser.add_argument('--dataset_path', type = pathlib.Path, help = 'Path to the dataset')
 
     args = parser.parse_args()
 
