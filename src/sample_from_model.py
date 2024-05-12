@@ -55,8 +55,19 @@ if __name__ == "__main__":
     # model = "results\+ comb long 2 class Unet1D attn mlp - pred_x0\model-50.pt" # ************ Too noisy healthy data
     model = "results\++ 2 Unet1D attn mlp - pred_x0\model-15.pt" # ************ This one is good !
 
-    seizure_samples = sample_from_model(model, num_samples=5, label=None, output_directory=None)
-    healthy_samples = sample_from_model(model, num_samples=5, label=5, output_directory=None)
+    seizure_samples = sample_from_model("results\++ 2 Unet1D attn mlp - pred_x0\model-15.pt", num_samples=1000, label=1, output_directory="data/synthetic/best/fnsz/")
+    healthy_samples = sample_from_model("results\++ 2 Unet1D attn mlp - pred_x0\model-15.pt", num_samples=1000, label=0, output_directory="data/synthetic/best/non_seizure/")
+    
+    seizure_samples = sample_from_model("results\+ comb long 2 class Unet1D attn mlp - pred_x0\model-50.pt", num_samples=1000, label=1, output_directory="data/synthetic/noisy/fnsz/")
+    healthy_samples = sample_from_model("results\+ comb long 2 class Unet1D attn mlp - pred_x0\model-50.pt", num_samples=1000, label=0, output_directory="data/synthetic/noisy/non_seizure/")
+
+    seizure_samples = sample_from_model("results\++ long 2 class Unet1D attn mlp - pred_x0\model-50.pt", num_samples=1000, label=1, output_directory="data/synthetic/worst/fnsz/")
+    healthy_samples = sample_from_model("results\++ long 2 class Unet1D attn mlp - pred_x0\model-50.pt", num_samples=1000, label=0, output_directory="data/synthetic/worst/non_seizure/")
+    
+    exit()
+
+    seizure_samples = sample_from_model(model, num_samples=5, label=1, output_directory=None)
+    healthy_samples = sample_from_model(model, num_samples=5, label=0, output_directory=None)
 
     plt.figure(figsize=(10, 20)) 
     for i in range(4):
