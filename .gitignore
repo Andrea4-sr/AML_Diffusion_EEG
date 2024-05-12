@@ -1,10 +1,10 @@
-*data/
+data/*_*
 **.pt
 **wandb/
 **results/
 
 # Allow a specific file within results
-!results\++ 2 Unet1D attn mlp - pred_x0\model-15.pt
+!data/synthetic
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
