@@ -155,6 +155,24 @@ if __name__ == '__main__':
                                                         _EEGPreprocessor(250, 0.5, 40),
                                                         EEGSignalToFeaturesWelch(250)
                                                     ]))
+        elif i.__contains__('CWT'):
+            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+                                                         loader = lambda path: numpy.load(path),
+                                                         extensions = ("npy"),
+                                                         transform = torchvision.transforms.Compose([
+                                                             numpy.squeeze,
+                                                             _EEGPreprocessor(250, 0.5, 40),
+                                                             EEGSignalToFeaturesCWT(wavelet='db4')
+                                                         ])
+        elif i.__contains__('FFT'):
+            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+                                                         loader = lambda path: numpy.load(path),
+                                                         extensions = ("npy"),
+                                                         transform = torchvision.transforms.Compose([
+                                                             numpy.squeeze,
+                                                             _EEGPreprocessor(250, 0.5, 40),
+                                                             EEGSignalToFeaturesFFT(sampling_rate=250)
+                                                         ])
         print('')
         print(f'Number of samples in dataset: {len(dataset)}')
         print('Classes:')
