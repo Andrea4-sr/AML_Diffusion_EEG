@@ -90,7 +90,7 @@ class EEGSignalToFeaturesWelch:
     def __call__(self, signal):
         frequency, power = welch(signal, fs=self.sampling_rate, nperseg=self.nperseg)
         power = power[:70]
-        # power = np.log(power)
+        power = np.log(power)
         return power
 
 
@@ -120,8 +120,8 @@ if __name__ == "__main__":
          print(f"Error: {args.model_dump_path} already exists")
          quit()
 
-    models = [GradientBoostingClassifier(n_estimators = 100), svm.SVC(), MLPClassifier()]
-    feature_extractors = [EEGSignalToFeaturesDWT, EEGSignalToFeaturesWelch]
+    models = [GradientBoostingClassifier(n_estimators = 100), svm.SVC(probability=True), MLPClassifier()]
+    feature_extractors = [EEGSignalToFeaturesWelch]
     combos = feature_classifier_combos(feature_extractors, models)
 
     for feature_extractor, classifier in combos:
@@ -160,7 +160,7 @@ if __name__ == "__main__":
                                                             _EEGPreprocessor(250, 0.5, 40),
                                                             EEGSignalToFeaturesFFT(sampling_rate=250)
                                                         ]))
-        else:
+        elif feature_extractor == EEGSignalToFeaturesWelch:
             print('Loading dataset...')
             dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
                                                          loader = lambda path: numpy.load(path),
@@ -168,7 +168,7 @@ if __name__ == "__main__":
                                                          transform = torchvision.transforms.Compose([
                                                             numpy.squeeze,
                                                             _EEGPreprocessor(250, 0.5, 40),
-                                                            EEGSignalToFeaturesFFT(sampling_rate=250)
+                                                            EEGSignalToFeaturesWelch(sampling_rate=250)
                                                         ]))
     
         print('Training classifier...')
