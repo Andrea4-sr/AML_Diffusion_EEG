@@ -2,6 +2,7 @@ import argparse
 from collections import Counter
 from eeg_preprocessing import EEGPreprocessor
 import numpy
+import numpy as np
 import os
 import pathlib
 import pickle
@@ -9,6 +10,7 @@ import pywt
 from sklearn import svm
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import confusion_matrix, roc_auc_score
+from scipy.signal import welch
 import torchvision
 
 
@@ -39,6 +41,16 @@ class EEGSignalToFeaturesDWT:
           features = [_signal_to_features(n) for n in pywt.wavedec(signal, wavelet = self.wavelet, mode = self.mode)]
           return numpy.asarray(features).flatten()
 
+class EEGSignalToFeaturesWelch:
+    def __init__(self, sampling_rate, nperseg=None):
+        self.sampling_rate = sampling_rate
+        self.nperseg = nperseg or sampling_rate // 2
+
+    def __call__(self, signal):
+        frequency, power = welch(signal, fs=self.sampling_rate, nperseg=self.nperseg)
+        power = power[:70]
+        power = np.log(power)
+        return power
 
 class ClassifierPerformanceMetrics:
     def __init__(self, y_true, y_pred, y_proba):
@@ -66,46 +78,53 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if not os.path.isfile(args.model_path):
-        print(f'Error: {args.model_path} does not exist (or is no file or not accessible)')
-        quit()
+    # if not os.path.isfile(args.model_path):
+    #     print(f'Error: {args.model_path} does not exist (or is no file or not accessible)')
+    #     quit()
 
     if not os.path.isdir(args.dataset_path):
         print(f'Error: {args.dataset_path} does not exist (or is no folder or not accessible)')
         quit()
 
-    print(f'Loading model {args.model_path}')
-    with open(args.model_path, 'rb') as file:
-        model = pickle.load(file)
+    for i in os.listdir(args.model_path):
+        print(f'Loading model {i}')
+        with open(args.model_path / i, 'rb') as file:
+            model = pickle.load(file)
 
-    print(f'Loading dataset {args.dataset_path}')
-    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                 loader = lambda path: numpy.load(path),
-                                                 extensions = ("npy"),
-                                                 transform = torchvision.transforms.Compose([
-                                                     numpy.squeeze,
-                                                     _EEGPreprocessor(250, 0.5, 60),
-                                                     EEGSignalToFeaturesDWT('db4', 'symmetric')
-                                                 ]))
-    
-    print('')
+        print(f'Loading dataset {args.dataset_path}')
+        if i.__contains__('DWT'):
+            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+                                                    loader = lambda path: numpy.load(path),
+                                                    extensions = ("npy"),
+                                                    transform = torchvision.transforms.Compose([
+                                                        numpy.squeeze,
+                                                        _EEGPreprocessor(250, 0.5, 40),
+                                                        EEGSignalToFeaturesDWT('db4', 'symmetric')
+                                                    ]))
+        elif i.__contains__('Welch'):
+            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+                                                    loader = lambda path: numpy.load(path),
+                                                    extensions = ("npy"),
+                                                    transform = torchvision.transforms.Compose([
+                                                        numpy.squeeze,
+                                                        _EEGPreprocessor(250, 0.5, 40),
+                                                        EEGSignalToFeaturesWelch(250)
+                                                    ]))
+        print('')
+        print(f'Number of samples in dataset: {len(dataset)}')
+        print('Classes:')
 
-    print(f'Number of samples in dataset: {len(dataset)}')
-    print('Classes:')
+        for target in Counter([t for _, t in dataset]).most_common():
+            print(f'  {dataset.classes[target[0]]}: {target[1]}')
+        
+        print('')
+        print('Evaluate classifier perfomance...')
+        metrics = evaluate_classifier(model, dataset)
 
-    for target in Counter([t for _, t in dataset]).most_common():
-        print(f'  {dataset.classes[target[0]]}: {target[1]}')
-    
-    print('')
-
-    print('Evaluate classifier perfomance...')
-    metrics = evaluate_classifier(model, dataset)
-
-    print('')
-
-    print(f'Accuracy: {metrics.accuracy}')
-    print(f'TPR: {metrics.tpr}')
-    print(f'TNR: {metrics.tnr}')
-    print(f'F1 score: {metrics.f1_score}')
-    print(f'AUROC: {metrics.auroc}')
-    
+        print('')
+        print(f'Accuracy: {round(metrics.accuracy, 2)}')
+        print(f'TPR: {round(metrics.tpr, 2)}')
+        print(f'TNR: {round(metrics.tnr, 2)}')
+        print(f'F1 score: {round(metrics.f1_score, 2)}')
+        print(f'AUROC: {round(metrics.auroc, 2)}')
+        print('')
