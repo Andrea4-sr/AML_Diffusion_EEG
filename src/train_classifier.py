@@ -54,33 +54,33 @@ class EEGSignalToFeaturesFFT:
         features = np.concatenate((magnitude_spectrum, phase_spectrum))
         return features
 
-class EEGSignalToFeaturesCWT:
-
-    def __init__(self, wavelet):
-        self.wavelet = wavelet
-        self.alpha_range = (8, 12)
-        self.beta_range = (12, 30)
-    def _calculate_medium_scales(self, sampling_rate):
-        alpha_scales = pywt.scale2frequency(self.wavelet, np.arange(64, sampling_rate)) * sampling_rate
-        beta_scales = pywt.scale2frequency(self.wavelet, np.arange(64, sampling_rate)) * sampling_rate
-
-        alpha_medium_scales = alpha_scales[(alpha_scales >= self.alpha_range[0]) & (alpha_scales <= self.alpha_range[1])]
-        beta_medium_scales = beta_scales[(beta_scales >= self.beta_range[0]) & (beta_scales <= self.beta_range[1])]
-
-        medium_scales = np.concatenate((alpha_medium_scales, beta_medium_scales))
-        return medium_scales
-
-    def __call__(self, signal):
-        medium_scales = self._calculate_medium_scales(sampling_rate=250)
-
-        features = []
-        for scale in medium_scales:
-            coefficients, _ = pywt.cwt(signal, scales=[scale], wavelet=self.wavelet)
-            features.append(coefficients.flatten())
-        features_array = np.asarray(features)
-        print(features_array.shape)
-        exit()
-        return np.asarray(features).flatten()
+# class EEGSignalToFeaturesCWT:
+#
+#     def __init__(self, wavelet):
+#         self.wavelet = wavelet
+#         self.alpha_range = (8, 12)
+#         self.beta_range = (12, 30)
+#     def _calculate_medium_scales(self, sampling_rate):
+#         alpha_scales = pywt.scale2frequency(self.wavelet, np.arange(64, sampling_rate)) * sampling_rate
+#         beta_scales = pywt.scale2frequency(self.wavelet, np.arange(64, sampling_rate)) * sampling_rate
+#
+#         alpha_medium_scales = alpha_scales[(alpha_scales >= self.alpha_range[0]) & (alpha_scales <= self.alpha_range[1])]
+#         beta_medium_scales = beta_scales[(beta_scales >= self.beta_range[0]) & (beta_scales <= self.beta_range[1])]
+#
+#         medium_scales = np.concatenate((alpha_medium_scales, beta_medium_scales))
+#         return medium_scales
+#
+#     def __call__(self, signal):
+#         medium_scales = self._calculate_medium_scales(sampling_rate=250)
+#
+#         features = []
+#         for scale in medium_scales:
+#             coefficients, _ = pywt.cwt(signal, scales=[scale], wavelet=self.wavelet)
+#             features.append(coefficients.flatten())
+#         features_array = np.asarray(features)
+#         print(features_array.shape)
+#         exit()
+#         return np.asarray(features).flatten()
 
 class EEGSignalToFeaturesWelch:
     def __init__(self, sampling_rate, nperseg=None):
@@ -121,7 +121,7 @@ if __name__ == "__main__":
          quit()
 
     models = [GradientBoostingClassifier(n_estimators = 100), svm.SVC(probability=True), MLPClassifier()]
-    feature_extractors = [EEGSignalToFeaturesWelch]
+    feature_extractors = [EEGSignalToFeaturesWelch, EEGSignalToFeaturesFFT, EEGSignalToFeaturesDWT] #EEGSignalToFeaturesCWT]
     combos = feature_classifier_combos(feature_extractors, models)
 
     for feature_extractor, classifier in combos:
@@ -140,16 +140,16 @@ if __name__ == "__main__":
                                                             _EEGPreprocessor(250, 0.5, 40),
                                                             EEGSignalToFeaturesDWT('db4', 'symmetric')
                                                          ]))
-        elif feature_extractor == EEGSignalToFeaturesCWT:
-            print('Loading dataset...')
-            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                         loader = lambda path: numpy.load(path),
-                                                         extensions = ("npy"),
-                                                         transform = torchvision.transforms.Compose([
-                                                            numpy.squeeze,
-                                                            _EEGPreprocessor(250, 0.5, 60),
-                                                            EEGSignalToFeaturesCWT(wavelet='db4')
-                                                        ]))
+        #elif feature_extractor == EEGSignalToFeaturesCWT:
+        #    print('Loading dataset...')
+        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+        #                                                 loader = lambda path: numpy.load(path),
+        #                                                 extensions = ("npy"),
+        #                                                 transform = torchvision.transforms.Compose([
+        #                                                    numpy.squeeze,
+        #                                                    _EEGPreprocessor(250, 0.5, 60),
+        #                                                    EEGSignalToFeaturesCWT(wavelet='db4')
+        #                                                ]))
         elif feature_extractor == EEGSignalToFeaturesFFT:
             print('Loading dataset...')
             dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
