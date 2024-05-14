@@ -181,6 +181,9 @@ if __name__ == '__main__':
         for target in Counter([t for _, t in dataset]).most_common():
             print(f'  {dataset.classes[target[0]]}: {target[1]}')
 
+            accuracies=[]
+
+
             for sample in range(0, len(dataset), 200):
 
                 print('')
@@ -195,18 +198,22 @@ if __name__ == '__main__':
                 print(f'AUROC at sample {sample}: {round(metrics.auroc, 2)}')
                 print('')
 
-                # Plot the accuracies
-                plt.plot(range(0, len(dataset), 200), metrics.accuracy, marker='o')
-                plt.xlabel('Sample Size')
-                plt.ylabel('Accuracy')
-                plt.title('Accuracy every 200 samples')
-                plt.show()
+                accuracies.append(metrics.accuracy)
+                aurocs.append(metrics.auroc)
+                samples.append(sample)
 
-                # Plot the accuracies
-                plt.plot(range(0, len(dataset), 200), metrics.auroc, marker='o')
-                plt.xlabel('Sample Size')
-                plt.ylabel('Accuracy')
-                plt.title('Accuracy every 200 samples')
-                plt.show()
+            # Plot the accuracies
+            plt.plot(samples, accuracies, marker='o')
+            plt.xlabel('Sample Size')
+            plt.ylabel('Accuracy')
+            plt.title('Accuracy every 200 samples')
+            plt.show()
+
+            # Plot the accuracies
+            plt.plot(samples, aurocs, marker='o')
+            plt.xlabel('Sample Size')
+            plt.ylabel('Accuracy')
+            plt.title('AUROC every 200 samples')
+            plt.show()
 
 
