@@ -14,6 +14,7 @@ from sklearn.metrics import confusion_matrix, roc_auc_score
 from scipy.signal import welch
 import torchvision
 import itertools
+import matplotlib.pyplot as plt
 
 
 class _EEGPreprocessor:
@@ -179,15 +180,33 @@ if __name__ == '__main__':
 
         for target in Counter([t for _, t in dataset]).most_common():
             print(f'  {dataset.classes[target[0]]}: {target[1]}')
-        
-        print('')
-        print('Evaluate classifier perfomance...')
-        metrics = evaluate_classifier(model, dataset)
 
-        print('')
-        print(f'Accuracy: {round(metrics.accuracy, 2)}')
-        print(f'TPR: {round(metrics.tpr, 2)}')
-        print(f'TNR: {round(metrics.tnr, 2)}')
-        print(f'F1 score: {round(metrics.f1_score, 2)}')
-        print(f'AUROC: {round(metrics.auroc, 2)}')
-        print('')
+            for sample in range(0, len(dataset), 200):
+
+                print('')
+                print('Evaluate classifier perfomance...')
+                metrics = evaluate_classifier(model, sample)
+
+                print('')
+                print(f'Accuracy at sample {sample}: {round(metrics.accuracy, 2)}')
+                print(f'TPR at sample {sample}: {round(metrics.tpr, 2)}')
+                print(f'TNR at sample {sample}: {round(metrics.tnr, 2)}')
+                print(f'F1 score at sample {sample}: {round(metrics.f1_score, 2)}')
+                print(f'AUROC at sample {sample}: {round(metrics.auroc, 2)}')
+                print('')
+
+                # Plot the accuracies
+                plt.plot(range(0, len(dataset), 200), metrics.accuracy, marker='o')
+                plt.xlabel('Sample Size')
+                plt.ylabel('Accuracy')
+                plt.title('Accuracy every 200 samples')
+                plt.show()
+
+                # Plot the accuracies
+                plt.plot(range(0, len(dataset), 200), metrics.auroc, marker='o')
+                plt.xlabel('Sample Size')
+                plt.ylabel('Accuracy')
+                plt.title('Accuracy every 200 samples')
+                plt.show()
+
+
