@@ -1,11 +1,11 @@
 data/*_*
 **.pt
 **wandb/
-**results/
 data/real/seizure_data
 data/real/seizure_data/*
 data/real/sleep_data
 data/real/sleep_data/*
+results/*/*
 
 # Allow a specific file within results
 !data/synthetic

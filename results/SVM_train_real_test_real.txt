@@ -1,0 +1,35 @@
+Model: EEGSignalToFeaturesFFT_SVC_1000_samples.pkl
+Accuracy: 0.796
+TPR: 0.883
+TNR: 0.709
+F1 score: 0.812327506899724
+AUROC: 0.8485475
+
+Model: EEGSignalToFeaturesFFT_SVC_200_samples.pkl
+Accuracy: 0.796
+TPR: 0.853
+TNR: 0.739
+F1 score: 0.8070009460737938
+AUROC: 0.8186829999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_400_samples.pkl
+Accuracy: 0.7965
+TPR: 0.883
+TNR: 0.71
+F1 score: 0.8127013345605154
+AUROC: 0.825042
+
+Model: EEGSignalToFeaturesFFT_SVC_600_samples.pkl
+Accuracy: 0.7945
+TPR: 0.841
+TNR: 0.748
+F1 score: 0.8036311514572384
+AUROC: 0.81665
+
+Model: EEGSignalToFeaturesFFT_SVC_800_samples.pkl
+Accuracy: 0.7935
+TPR: 0.853
+TNR: 0.734
+F1 score: 0.8050967437470505
+AUROC: 0.8249679999999999
+

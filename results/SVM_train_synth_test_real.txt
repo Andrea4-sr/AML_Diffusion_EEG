@@ -1,0 +1,693 @@
+Model: EEGSignalToFeaturesFFT_SVC_10000_samples.pkl
+Accuracy: 0.581
+TPR: 0.324
+TNR: 0.838
+F1 score: 0.4360699865410498
+AUROC: 0.7667244999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_1000_samples.pkl
+Accuracy: 0.4975
+TPR: 0.995
+TNR: 0.0
+F1 score: 0.664440734557596
+AUROC: 0.7606760000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_10200_samples.pkl
+Accuracy: 0.582
+TPR: 0.324
+TNR: 0.84
+F1 score: 0.4366576819407008
+AUROC: 0.7657125
+
+Model: EEGSignalToFeaturesFFT_SVC_10400_samples.pkl
+Accuracy: 0.5825
+TPR: 0.325
+TNR: 0.84
+F1 score: 0.4377104377104377
+AUROC: 0.766556
+
+Model: EEGSignalToFeaturesFFT_SVC_10600_samples.pkl
+Accuracy: 0.582
+TPR: 0.324
+TNR: 0.84
+F1 score: 0.4366576819407008
+AUROC: 0.7656219999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_10800_samples.pkl
+Accuracy: 0.5815
+TPR: 0.324
+TNR: 0.839
+F1 score: 0.43636363636363634
+AUROC: 0.765707
+
+Model: EEGSignalToFeaturesFFT_SVC_11000_samples.pkl
+Accuracy: 0.578
+TPR: 0.314
+TNR: 0.842
+F1 score: 0.4266304347826087
+AUROC: 0.7674050000000002
+
+Model: EEGSignalToFeaturesFFT_SVC_11200_samples.pkl
+Accuracy: 0.5815
+TPR: 0.324
+TNR: 0.839
+F1 score: 0.43636363636363634
+AUROC: 0.7424155
+
+Model: EEGSignalToFeaturesFFT_SVC_11400_samples.pkl
+Accuracy: 0.5855
+TPR: 0.335
+TNR: 0.836
+F1 score: 0.4469646430953969
+AUROC: 0.765611
+
+Model: EEGSignalToFeaturesFFT_SVC_11600_samples.pkl
+Accuracy: 0.5765
+TPR: 0.31
+TNR: 0.843
+F1 score: 0.4226312201772324
+AUROC: 0.7656175
+
+Model: EEGSignalToFeaturesFFT_SVC_11800_samples.pkl
+Accuracy: 0.5785
+TPR: 0.315
+TNR: 0.842
+F1 score: 0.42769857433808556
+AUROC: 0.765518
+
+Model: EEGSignalToFeaturesFFT_SVC_12000_samples.pkl
+Accuracy: 0.58
+TPR: 0.318
+TNR: 0.842
+F1 score: 0.43089430894308944
+AUROC: 0.7662640000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_1200_samples.pkl
+Accuracy: 0.4995
+TPR: 0.999
+TNR: 0.0
+F1 score: 0.6662220740246749
+AUROC: 0.765933
+
+Model: EEGSignalToFeaturesFFT_SVC_12200_samples.pkl
+Accuracy: 0.5795
+TPR: 0.317
+TNR: 0.842
+F1 score: 0.42983050847457627
+AUROC: 0.7652344999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_12400_samples.pkl
+Accuracy: 0.586
+TPR: 0.336
+TNR: 0.836
+F1 score: 0.448
+AUROC: 0.7658285000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_12600_samples.pkl
+Accuracy: 0.5765
+TPR: 0.31
+TNR: 0.843
+F1 score: 0.4226312201772324
+AUROC: 0.7660575
+
+Model: EEGSignalToFeaturesFFT_SVC_12800_samples.pkl
+Accuracy: 0.579
+TPR: 0.316
+TNR: 0.842
+F1 score: 0.4287652645861601
+AUROC: 0.7661945
+
+Model: EEGSignalToFeaturesFFT_SVC_13000_samples.pkl
+Accuracy: 0.582
+TPR: 0.323
+TNR: 0.841
+F1 score: 0.4358974358974359
+AUROC: 0.7654215
+
+Model: EEGSignalToFeaturesFFT_SVC_13200_samples.pkl
+Accuracy: 0.581
+TPR: 0.32
+TNR: 0.842
+F1 score: 0.4330175913396482
+AUROC: 0.7657415
+
+Model: EEGSignalToFeaturesFFT_SVC_13400_samples.pkl
+Accuracy: 0.5765
+TPR: 0.31
+TNR: 0.843
+F1 score: 0.4226312201772324
+AUROC: 0.7665825000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_13600_samples.pkl
+Accuracy: 0.578
+TPR: 0.314
+TNR: 0.842
+F1 score: 0.4266304347826087
+AUROC: 0.7660910000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_13800_samples.pkl
+Accuracy: 0.581
+TPR: 0.322
+TNR: 0.84
+F1 score: 0.43454790823211875
+AUROC: 0.7671840000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_14000_samples.pkl
+Accuracy: 0.5785
+TPR: 0.315
+TNR: 0.842
+F1 score: 0.42769857433808556
+AUROC: 0.7657909999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_1400_samples.pkl
+Accuracy: 0.6505
+TPR: 0.495
+TNR: 0.806
+F1 score: 0.5861456483126111
+AUROC: 0.770403
+
+Model: EEGSignalToFeaturesFFT_SVC_14200_samples.pkl
+Accuracy: 0.574
+TPR: 0.303
+TNR: 0.845
+F1 score: 0.4156378600823045
+AUROC: 0.7653115
+
+Model: EEGSignalToFeaturesFFT_SVC_14400_samples.pkl
+Accuracy: 0.5755
+TPR: 0.309
+TNR: 0.842
+F1 score: 0.4212678936605317
+AUROC: 0.7665075000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_14600_samples.pkl
+Accuracy: 0.5785
+TPR: 0.315
+TNR: 0.842
+F1 score: 0.42769857433808556
+AUROC: 0.7657895000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_14800_samples.pkl
+Accuracy: 0.5785
+TPR: 0.315
+TNR: 0.842
+F1 score: 0.42769857433808556
+AUROC: 0.765979
+
+Model: EEGSignalToFeaturesFFT_SVC_15000_samples.pkl
+Accuracy: 0.574
+TPR: 0.305
+TNR: 0.843
+F1 score: 0.4172366621067031
+AUROC: 0.7674435000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_15200_samples.pkl
+Accuracy: 0.5785
+TPR: 0.315
+TNR: 0.842
+F1 score: 0.42769857433808556
+AUROC: 0.7659330000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_15400_samples.pkl
+Accuracy: 0.577
+TPR: 0.312
+TNR: 0.842
+F1 score: 0.42448979591836733
+AUROC: 0.7675395
+
+Model: EEGSignalToFeaturesFFT_SVC_15600_samples.pkl
+Accuracy: 0.5755
+TPR: 0.308
+TNR: 0.843
+F1 score: 0.4204778156996587
+AUROC: 0.765854
+
+Model: EEGSignalToFeaturesFFT_SVC_15800_samples.pkl
+Accuracy: 0.579
+TPR: 0.315
+TNR: 0.843
+F1 score: 0.4279891304347826
+AUROC: 0.7657255000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_16000_samples.pkl
+Accuracy: 0.5735
+TPR: 0.304
+TNR: 0.843
+F1 score: 0.4161533196440794
+AUROC: 0.766235
+
+Model: EEGSignalToFeaturesFFT_SVC_1600_samples.pkl
+Accuracy: 0.4995
+TPR: 0.999
+TNR: 0.0
+F1 score: 0.6662220740246749
+AUROC: 0.763621
+
+Model: EEGSignalToFeaturesFFT_SVC_16200_samples.pkl
+Accuracy: 0.5785
+TPR: 0.315
+TNR: 0.842
+F1 score: 0.42769857433808556
+AUROC: 0.7658465
+
+Model: EEGSignalToFeaturesFFT_SVC_16400_samples.pkl
+Accuracy: 0.575
+TPR: 0.306
+TNR: 0.844
+F1 score: 0.4186046511627907
+AUROC: 0.7656815
+
+Model: EEGSignalToFeaturesFFT_SVC_16600_samples.pkl
+Accuracy: 0.577
+TPR: 0.312
+TNR: 0.842
+F1 score: 0.42448979591836733
+AUROC: 0.7656335
+
+Model: EEGSignalToFeaturesFFT_SVC_16800_samples.pkl
+Accuracy: 0.5755
+TPR: 0.308
+TNR: 0.843
+F1 score: 0.4204778156996587
+AUROC: 0.7661325
+
+Model: EEGSignalToFeaturesFFT_SVC_17000_samples.pkl
+Accuracy: 0.575
+TPR: 0.308
+TNR: 0.842
+F1 score: 0.4201909959072306
+AUROC: 0.7655590000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_17200_samples.pkl
+Accuracy: 0.5725
+TPR: 0.301
+TNR: 0.844
+F1 score: 0.4131777625257378
+AUROC: 0.7654945
+
+Model: EEGSignalToFeaturesFFT_SVC_17400_samples.pkl
+Accuracy: 0.574
+TPR: 0.304
+TNR: 0.844
+F1 score: 0.41643835616438357
+AUROC: 0.766206
+
+Model: EEGSignalToFeaturesFFT_SVC_17600_samples.pkl
+Accuracy: 0.574
+TPR: 0.304
+TNR: 0.844
+F1 score: 0.41643835616438357
+AUROC: 0.7657375000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_17800_samples.pkl
+Accuracy: 0.574
+TPR: 0.304
+TNR: 0.844
+F1 score: 0.41643835616438357
+AUROC: 0.766368
+
+Model: EEGSignalToFeaturesFFT_SVC_18000_samples.pkl
+Accuracy: 0.5735
+TPR: 0.303
+TNR: 0.844
+F1 score: 0.4153529814941741
+AUROC: 0.765798
+
+Model: EEGSignalToFeaturesFFT_SVC_1800_samples.pkl
+Accuracy: 0.4995
+TPR: 0.999
+TNR: 0.0
+F1 score: 0.6662220740246749
+AUROC: 0.767329
+
+Model: EEGSignalToFeaturesFFT_SVC_18200_samples.pkl
+Accuracy: 0.574
+TPR: 0.304
+TNR: 0.844
+F1 score: 0.41643835616438357
+AUROC: 0.765903
+
+Model: EEGSignalToFeaturesFFT_SVC_18400_samples.pkl
+Accuracy: 0.575
+TPR: 0.306
+TNR: 0.844
+F1 score: 0.4186046511627907
+AUROC: 0.7662135
+
+Model: EEGSignalToFeaturesFFT_SVC_18600_samples.pkl
+Accuracy: 0.573
+TPR: 0.301
+TNR: 0.845
+F1 score: 0.41346153846153844
+AUROC: 0.7656729999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_18800_samples.pkl
+Accuracy: 0.573
+TPR: 0.301
+TNR: 0.845
+F1 score: 0.41346153846153844
+AUROC: 0.7659725000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_19000_samples.pkl
+Accuracy: 0.5705
+TPR: 0.296
+TNR: 0.845
+F1 score: 0.4079944865609924
+AUROC: 0.7657535
+
+Model: EEGSignalToFeaturesFFT_SVC_19200_samples.pkl
+Accuracy: 0.5755
+TPR: 0.307
+TNR: 0.844
+F1 score: 0.41968557758031444
+AUROC: 0.7662734999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_19400_samples.pkl
+Accuracy: 0.568
+TPR: 0.291
+TNR: 0.845
+F1 score: 0.4024896265560166
+AUROC: 0.7658290000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_19600_samples.pkl
+Accuracy: 0.571
+TPR: 0.297
+TNR: 0.845
+F1 score: 0.4090909090909091
+AUROC: 0.7657895
+
+Model: EEGSignalToFeaturesFFT_SVC_19800_samples.pkl
+Accuracy: 0.571
+TPR: 0.297
+TNR: 0.845
+F1 score: 0.4090909090909091
+AUROC: 0.7657690000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_2000_samples.pkl
+Accuracy: 0.6405
+TPR: 0.475
+TNR: 0.806
+F1 score: 0.5692031156381067
+AUROC: 0.7672575
+
+Model: EEGSignalToFeaturesFFT_SVC_200_samples.pkl
+Accuracy: 0.4935
+TPR: 0.987
+TNR: 0.0
+F1 score: 0.6608637428858386
+AUROC: 0.7562824999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_2200_samples.pkl
+Accuracy: 0.6515
+TPR: 0.5
+TNR: 0.803
+F1 score: 0.5892751915144372
+AUROC: 0.765852
+
+Model: EEGSignalToFeaturesFFT_SVC_2400_samples.pkl
+Accuracy: 0.6595
+TPR: 0.521
+TNR: 0.798
+F1 score: 0.6047591410330818
+AUROC: 0.7669039999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_2600_samples.pkl
+Accuracy: 0.6745
+TPR: 0.555
+TNR: 0.794
+F1 score: 0.6303236797274276
+AUROC: 0.7671905
+
+Model: EEGSignalToFeaturesFFT_SVC_2800_samples.pkl
+Accuracy: 0.5945
+TPR: 0.363
+TNR: 0.826
+F1 score: 0.47234873129473
+AUROC: 0.7687845
+
+Model: EEGSignalToFeaturesFFT_SVC_3000_samples.pkl
+Accuracy: 0.6005
+TPR: 0.377
+TNR: 0.824
+F1 score: 0.4855119124275596
+AUROC: 0.7672865
+
+Model: EEGSignalToFeaturesFFT_SVC_3200_samples.pkl
+Accuracy: 0.647
+TPR: 0.493
+TNR: 0.801
+F1 score: 0.58274231678487
+AUROC: 0.764617
+
+Model: EEGSignalToFeaturesFFT_SVC_3400_samples.pkl
+Accuracy: 0.6135
+TPR: 0.413
+TNR: 0.814
+F1 score: 0.5165728580362726
+AUROC: 0.7657135
+
+Model: EEGSignalToFeaturesFFT_SVC_3600_samples.pkl
+Accuracy: 0.6695
+TPR: 0.545
+TNR: 0.794
+F1 score: 0.6225014277555683
+AUROC: 0.7657179999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_3800_samples.pkl
+Accuracy: 0.592
+TPR: 0.354
+TNR: 0.83
+F1 score: 0.4645669291338583
+AUROC: 0.7678115
+
+Model: EEGSignalToFeaturesFFT_SVC_4000_samples.pkl
+Accuracy: 0.598
+TPR: 0.372
+TNR: 0.824
+F1 score: 0.4806201550387597
+AUROC: 0.7680369999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_400_samples.pkl
+Accuracy: 0.4965
+TPR: 0.993
+TNR: 0.0
+F1 score: 0.6635482793184097
+AUROC: 0.760974
+
+Model: EEGSignalToFeaturesFFT_SVC_4200_samples.pkl
+Accuracy: 0.5955
+TPR: 0.367
+TNR: 0.824
+F1 score: 0.4756966947504861
+AUROC: 0.7681175
+
+Model: EEGSignalToFeaturesFFT_SVC_4400_samples.pkl
+Accuracy: 0.614
+TPR: 0.412
+TNR: 0.816
+F1 score: 0.5162907268170426
+AUROC: 0.765088
+
+Model: EEGSignalToFeaturesFFT_SVC_4600_samples.pkl
+Accuracy: 0.6
+TPR: 0.379
+TNR: 0.821
+F1 score: 0.4865211810012837
+AUROC: 0.7662805
+
+Model: EEGSignalToFeaturesFFT_SVC_4800_samples.pkl
+Accuracy: 0.6385
+TPR: 0.473
+TNR: 0.804
+F1 score: 0.566806470940683
+AUROC: 0.763807
+
+Model: EEGSignalToFeaturesFFT_SVC_5000_samples.pkl
+Accuracy: 0.5985
+TPR: 0.371
+TNR: 0.826
+F1 score: 0.4802588996763754
+AUROC: 0.7679855
+
+Model: EEGSignalToFeaturesFFT_SVC_5200_samples.pkl
+Accuracy: 0.596
+TPR: 0.37
+TNR: 0.822
+F1 score: 0.4780361757105943
+AUROC: 0.7653645
+
+Model: EEGSignalToFeaturesFFT_SVC_5400_samples.pkl
+Accuracy: 0.5865
+TPR: 0.341
+TNR: 0.832
+F1 score: 0.45195493704440026
+AUROC: 0.7653104999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_5600_samples.pkl
+Accuracy: 0.5875
+TPR: 0.344
+TNR: 0.831
+F1 score: 0.4547257105089227
+AUROC: 0.7659509999999998
+
+Model: EEGSignalToFeaturesFFT_SVC_5800_samples.pkl
+Accuracy: 0.6055
+TPR: 0.391
+TNR: 0.82
+F1 score: 0.49777211966900065
+AUROC: 0.7646755
+
+Model: EEGSignalToFeaturesFFT_SVC_6000_samples.pkl
+Accuracy: 0.586
+TPR: 0.34
+TNR: 0.832
+F1 score: 0.4509283819628647
+AUROC: 0.7655509999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_600_samples.pkl
+Accuracy: 0.4975
+TPR: 0.995
+TNR: 0.0
+F1 score: 0.664440734557596
+AUROC: 0.7540525
+
+Model: EEGSignalToFeaturesFFT_SVC_6200_samples.pkl
+Accuracy: 0.595
+TPR: 0.365
+TNR: 0.825
+F1 score: 0.474025974025974
+AUROC: 0.764266
+
+Model: EEGSignalToFeaturesFFT_SVC_6400_samples.pkl
+Accuracy: 0.583
+TPR: 0.327
+TNR: 0.839
+F1 score: 0.43951612903225806
+AUROC: 0.7665725000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_6600_samples.pkl
+Accuracy: 0.586
+TPR: 0.34
+TNR: 0.832
+F1 score: 0.4509283819628647
+AUROC: 0.765626
+
+Model: EEGSignalToFeaturesFFT_SVC_6800_samples.pkl
+Accuracy: 0.5845
+TPR: 0.333
+TNR: 0.836
+F1 score: 0.44488977955911824
+AUROC: 0.7652605
+
+Model: EEGSignalToFeaturesFFT_SVC_7000_samples.pkl
+Accuracy: 0.584
+TPR: 0.331
+TNR: 0.837
+F1 score: 0.4431057563587684
+AUROC: 0.7675929999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_7200_samples.pkl
+Accuracy: 0.581
+TPR: 0.321
+TNR: 0.841
+F1 score: 0.4337837837837838
+AUROC: 0.7669315
+
+Model: EEGSignalToFeaturesFFT_SVC_7400_samples.pkl
+Accuracy: 0.587
+TPR: 0.34
+TNR: 0.834
+F1 score: 0.45152722443559096
+AUROC: 0.7666565000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_7600_samples.pkl
+Accuracy: 0.584
+TPR: 0.33
+TNR: 0.838
+F1 score: 0.44235924932975873
+AUROC: 0.7660735000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_7800_samples.pkl
+Accuracy: 0.59
+TPR: 0.349
+TNR: 0.831
+F1 score: 0.4598155467720685
+AUROC: 0.76565
+
+Model: EEGSignalToFeaturesFFT_SVC_8000_samples.pkl
+Accuracy: 0.5875
+TPR: 0.342
+TNR: 0.833
+F1 score: 0.4532803180914513
+AUROC: 0.7650455
+
+Model: EEGSignalToFeaturesFFT_SVC_800_samples.pkl
+Accuracy: 0.498
+TPR: 0.996
+TNR: 0.0
+F1 score: 0.664886515353805
+AUROC: 0.7682225
+
+Model: EEGSignalToFeaturesFFT_SVC_8200_samples.pkl
+Accuracy: 0.5835
+TPR: 0.33
+TNR: 0.837
+F1 score: 0.4420629604822505
+AUROC: 0.766273
+
+Model: EEGSignalToFeaturesFFT_SVC_8400_samples.pkl
+Accuracy: 0.5845
+TPR: 0.331
+TNR: 0.838
+F1 score: 0.4434025452109846
+AUROC: 0.765788
+
+Model: EEGSignalToFeaturesFFT_SVC_8600_samples.pkl
+Accuracy: 0.5825
+TPR: 0.322
+TNR: 0.843
+F1 score: 0.4354293441514537
+AUROC: 0.767113
+
+Model: EEGSignalToFeaturesFFT_SVC_8800_samples.pkl
+Accuracy: 0.5955
+TPR: 0.364
+TNR: 0.827
+F1 score: 0.47364996746909566
+AUROC: 0.7655985000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_9000_samples.pkl
+Accuracy: 0.5835
+TPR: 0.33
+TNR: 0.837
+F1 score: 0.4420629604822505
+AUROC: 0.7659239999999999
+
+Model: EEGSignalToFeaturesFFT_SVC_9200_samples.pkl
+Accuracy: 0.5835
+TPR: 0.33
+TNR: 0.837
+F1 score: 0.4420629604822505
+AUROC: 0.7650755000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_9400_samples.pkl
+Accuracy: 0.581
+TPR: 0.32
+TNR: 0.842
+F1 score: 0.4330175913396482
+AUROC: 0.7661490000000001
+
+Model: EEGSignalToFeaturesFFT_SVC_9600_samples.pkl
+Accuracy: 0.594
+TPR: 0.359
+TNR: 0.829
+F1 score: 0.469281045751634
+AUROC: 0.765504
+
+Model: EEGSignalToFeaturesFFT_SVC_9800_samples.pkl
+Accuracy: 0.5955
+TPR: 0.363
+TNR: 0.828
+F1 score: 0.47296416938110747
+AUROC: 0.7659250000000001
+
