@@ -15,7 +15,7 @@ import itertools
 from collections import Counter
 from sklearn.model_selection import train_test_split
 import random
-
+random.seed(20)
 
 
 
@@ -59,34 +59,6 @@ class EEGSignalToFeaturesFFT:
         features = np.concatenate((magnitude_spectrum, phase_spectrum))
         return features
 
-# class EEGSignalToFeaturesCWT:
-#
-#     def __init__(self, wavelet):
-#         self.wavelet = wavelet
-#         self.alpha_range = (8, 12)
-#         self.beta_range = (12, 30)
-#     def _calculate_medium_scales(self, sampling_rate):
-#         alpha_scales = pywt.scale2frequency(self.wavelet, np.arange(64, sampling_rate)) * sampling_rate
-#         beta_scales = pywt.scale2frequency(self.wavelet, np.arange(64, sampling_rate)) * sampling_rate
-#
-#         alpha_medium_scales = alpha_scales[(alpha_scales >= self.alpha_range[0]) & (alpha_scales <= self.alpha_range[1])]
-#         beta_medium_scales = beta_scales[(beta_scales >= self.beta_range[0]) & (beta_scales <= self.beta_range[1])]
-#
-#         medium_scales = np.concatenate((alpha_medium_scales, beta_medium_scales))
-#         return medium_scales
-#
-#     def __call__(self, signal):
-#         medium_scales = self._calculate_medium_scales(sampling_rate=250)
-#
-#         features = []
-#         for scale in medium_scales:
-#             coefficients, _ = pywt.cwt(signal, scales=[scale], wavelet=self.wavelet)
-#             features.append(coefficients.flatten())
-#         features_array = np.asarray(features)
-#         print(features_array.shape)
-#         exit()
-#         return np.asarray(features).flatten()
-
 class EEGSignalToFeaturesWelch:
     def __init__(self, sampling_rate, nperseg=None):
         self.sampling_rate = sampling_rate
@@ -121,6 +93,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Train a classifier model based on the provided dataset.')
     parser.add_argument('--dataset_path', type = pathlib.Path, help = 'Path to the dataset')
     parser.add_argument('--model_dump_path', type = pathlib.Path, help = 'Path to file where the trained model is serialized to')
+    parser.add_argument('--n_samples', type = int, default = 1001, help = 'Number of samples to use for training')
 
     args = parser.parse_args()
 
@@ -154,46 +127,11 @@ if __name__ == "__main__":
                                                      loader=lambda path: np.load(path),
                                                      extensions=("npy",),
                                                      transform=transform)
-        #elif feature_extractor == EEGSignalToFeaturesCWT:
-        #    print('Loading dataset...')
-        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-        #                                                 loader = lambda path: numpy.load(path),
-        #                                                 extensions = ("npy"),
-        #                                                 transform = torchvision.transforms.Compose([
-        #                                                    numpy.squeeze,
-        #                                                    _EEGPreprocessor(250, 0.5, 60),
-        #                                                    EEGSignalToFeaturesCWT(wavelet='db4')
-        #                                                ]))
 
-        # elif feature_extractor == EEGSignalToFeaturesDWT:
-        #    print('Loading dataset...')
-        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-        #                                                 loader = lambda path: numpy.load(path),
-        #                                                 extensions = ("npy"),
-        #                                                 transform = torchvision.transforms.Compose([
-        #                                                    numpy.squeeze,
-        #                                                    _EEGPreprocessor(250, 0.5, 40),
-        #                                                    EEGSignalToFeaturesDWT('db4', 'symmetric')
-        #                                                 ]))
-
-        #elif feature_extractor == EEGSignalToFeaturesWelch:
-        #    print('Loading dataset...')
-        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-        #                                                 loader = lambda path: numpy.load(path),
-        #                                                 extensions = ("npy"),
-        #                                                 transform = torchvision.transforms.Compose([
-        #                                                    numpy.squeeze,
-        #                                                    _EEGPreprocessor(250, 0.5, 40),
-        #                                                    EEGSignalToFeaturesWelch(sampling_rate=250)
-        #                                                ]))
-
-        # Load and transform the entire dataset
         processed_data = load_and_transform_data(dataset, transform)
+        random.shuffle(processed_data)
 
-        for sample_size in range(200, 1001, 200):
-
-            random.seed(42)
-            random.shuffle(processed_data)
+        for sample_size in range(200, args.n_samples, 200):
 
             # Ensure the sample dataset contains both classes
             sample_dataset, _ = train_test_split(processed_data, train_size=sample_size,

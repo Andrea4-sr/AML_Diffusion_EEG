@@ -146,42 +146,19 @@ if __name__ == '__main__':
             with open(args.model_path / i, 'rb') as file:
                 model = pickle.load(file)
 
+            # Extract the sample size from the filename
+            sample_size = int(i.split('_')[-2])
+            sample_sizes.append(sample_size)
+
             print(f'Loading dataset {args.dataset_path}')
             dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
                                                          loader=lambda path: numpy.load(path),
                                                          extensions=("npy"),
                                                          transform=torchvision.transforms.Compose([
                                                              numpy.squeeze,
-                                                             _EEGPreprocessor(250, 0.5, 40),
+                                                            #  _EEGPreprocessor(250, 0.5, 40),
                                                              EEGSignalToFeaturesFFT(sampling_rate=250)
                                                          ]))
-            #if i.__contains__('DWT'):
-            #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-            #                                            loader = lambda path: numpy.load(path),
-            #                                            extensions = ("npy"),
-            #                                            transform = torchvision.transforms.Compose([
-            #                                                numpy.squeeze,
-            #                                                _EEGPreprocessor(250, 0.5, 40),
-            #                                                EEGSignalToFeaturesDWT('db4', 'symmetric')
-            #                                            ]))
-            #elif i.__contains__('Welch'):
-            #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-            #                                            loader = lambda path: numpy.load(path),
-            #                                            extensions = ("npy"),
-            #                                            transform = torchvision.transforms.Compose([
-            #                                                numpy.squeeze,
-            #                                                _EEGPreprocessor(250, 0.5, 40),
-            #                                                EEGSignalToFeaturesWelch(250)
-            #                                            ]))
-            #elif i.__contains__('CWT'):
-            #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-            #                                                 loader = lambda path: numpy.load(path),
-            #                                                 extensions = ("npy"),
-            #                                                 transform = torchvision.transforms.Compose([
-            #                                                     numpy.squeeze,
-            #                                                     _EEGPreprocessor(250, 0.5, 40),
-            #                                                     EEGSignalToFeaturesCWT(wavelet='db4')
-            #                                                 ])
 
             print('')
             print(f'Number of samples in dataset: {len(dataset)}')
@@ -195,11 +172,11 @@ if __name__ == '__main__':
             metrics = evaluate_classifier(model, dataset)
 
             print('')
-            print(f'Accuracy at sample {dataset}: {round(metrics.accuracy, 2)}')
-            print(f'TPR at sample {dataset}: {round(metrics.tpr, 2)}')
-            print(f'TNR at sample {dataset}: {round(metrics.tnr, 2)}')
-            print(f'F1 score at sample {dataset}: {round(metrics.f1_score, 2)}')
-            print(f'AUROC at sample {dataset}: {round(metrics.auroc, 2)}')
+            print(f'Accuracy at sample {sample_size}: {round(metrics.accuracy, 2)}')
+            print(f'TPR at sample {sample_size}: {round(metrics.tpr, 2)}')
+            print(f'TNR at sample {sample_size}: {round(metrics.tnr, 2)}')
+            print(f'F1 score at sample {sample_size}: {round(metrics.f1_score, 2)}')
+            print(f'AUROC at sample {sample_size}: {round(metrics.auroc, 2)}')
             print('')
 
             # Write metrics to file
@@ -213,11 +190,7 @@ if __name__ == '__main__':
 
             aurocs.append(metrics.auroc)
 
-            # Extract the sample size from the filename
-            sample_size = int(i.split('_')[-2])
-            sample_sizes.append(sample_size)
-
-    print(len(aurocs))
+    # print(len(aurocs))
 
     # Sort by sample size
     sorted_indices = np.argsort(sample_sizes)
@@ -225,14 +198,17 @@ if __name__ == '__main__':
     sorted_aurocs = np.array(aurocs)[sorted_indices]
 
     # Plot the AUROCs
-    plt.plot(sorted_sample_sizes, sorted_aurocs, marker='o')
-    plt.xlabel('Sample Size')
+    plt.figure(figsize=(10, 6))
+    plt.plot(sorted_sample_sizes, sorted_aurocs, marker='x', markersize=10, label='AUROC')
+    plt.grid()
+    plt.xlabel('Sample Size (n)')
     plt.ylabel('AUROC')
-    plt.title('AUROC for Different Sample Sizes')
+    plt.ylim(0, 1)  # Set the limits for the Y axis
+    plt.legend()
 
     # Save the plot with a specific name
     plot_filename = args.plot_path / f"{args.plot_name}.png"
-    os.makedirs(plot_filename.parent, exist_ok=True)  # Create the directory if it doesn't exist
+    os.makedirs(plot_filename.parent, exist_ok=True)
     plt.savefig(plot_filename)
 
 

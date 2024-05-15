@@ -13,7 +13,8 @@ import pyedflib
 import scipy
 import tqdm
 import random
-random.seed(42)
+random.seed(20)
+
 
 def _filenames_of_edf_csv_pairs(edf_dir: str):
     edf_files = glob.glob(os.path.join(edf_dir, "*.edf"))
