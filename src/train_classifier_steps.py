@@ -14,6 +14,8 @@ import torchvision
 import itertools
 from collections import Counter
 from sklearn.model_selection import train_test_split
+import random
+
 
 
 
@@ -189,6 +191,10 @@ if __name__ == "__main__":
         processed_data = load_and_transform_data(dataset, transform)
 
         for sample_size in range(200, 1001, 200):
+
+            random.seed(42)
+            random.shuffle(processed_data)
+
             # Ensure the sample dataset contains both classes
             sample_dataset, _ = train_test_split(processed_data, train_size=sample_size,
                                                  stratify=[target for _, target in processed_data])
