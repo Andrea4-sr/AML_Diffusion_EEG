@@ -121,7 +121,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'Evaluate a classifier model based on the provided dataset.')
     parser.add_argument('--model_path', type = pathlib.Path, help = 'Path to the model dump file')
     parser.add_argument('--dataset_path', type = pathlib.Path, help = 'Path to the dataset')
-
+    parser.add_argument('--plot_path', type=pathlib.Path, help = 'Path to dump the plot')
     args = parser.parse_args()
 
     # if not os.path.isfile(args.model_path):
@@ -132,48 +132,50 @@ if __name__ == '__main__':
         print(f'Error: {args.dataset_path} does not exist (or is no folder or not accessible)')
         quit()
 
+    aurocs = []
+
     for i in os.listdir(args.model_path):
         print(f'Loading model {i}')
         with open(args.model_path / i, 'rb') as file:
             model = pickle.load(file)
 
         print(f'Loading dataset {args.dataset_path}')
-        if i.__contains__('DWT'):
-            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                    loader = lambda path: numpy.load(path),
-                                                    extensions = ("npy"),
-                                                    transform = torchvision.transforms.Compose([
-                                                        numpy.squeeze,
-                                                        _EEGPreprocessor(250, 0.5, 40),
-                                                        EEGSignalToFeaturesDWT('db4', 'symmetric')
-                                                    ]))
-        elif i.__contains__('Welch'):
-            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                    loader = lambda path: numpy.load(path),
-                                                    extensions = ("npy"),
-                                                    transform = torchvision.transforms.Compose([
-                                                        numpy.squeeze,
-                                                        _EEGPreprocessor(250, 0.5, 40),
-                                                        EEGSignalToFeaturesWelch(250)
-                                                    ]))
-        elif i.__contains__('CWT'):
-            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                         loader = lambda path: numpy.load(path),
-                                                         extensions = ("npy"),
-                                                         transform = torchvision.transforms.Compose([
-                                                             numpy.squeeze,
-                                                             _EEGPreprocessor(250, 0.5, 40),
-                                                             EEGSignalToFeaturesCWT(wavelet='db4')
-                                                         ])
-        elif i.__contains__('FFT'):
-            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                         loader = lambda path: numpy.load(path),
-                                                         extensions = ("npy"),
-                                                         transform = torchvision.transforms.Compose([
-                                                             numpy.squeeze,
-                                                             _EEGPreprocessor(250, 0.5, 40),
-                                                             EEGSignalToFeaturesFFT(sampling_rate=250)
-                                                         ])
+        dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+                                                     loader=lambda path: numpy.load(path),
+                                                     extensions=("npy"),
+                                                     transform=torchvision.transforms.Compose([
+                                                         numpy.squeeze,
+                                                         _EEGPreprocessor(250, 0.5, 40),
+                                                         EEGSignalToFeaturesFFT(sampling_rate=250)
+                                                     ]))
+        #if i.__contains__('DWT'):
+        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+        #                                            loader = lambda path: numpy.load(path),
+        #                                            extensions = ("npy"),
+        #                                            transform = torchvision.transforms.Compose([
+        #                                                numpy.squeeze,
+        #                                                _EEGPreprocessor(250, 0.5, 40),
+        #                                                EEGSignalToFeaturesDWT('db4', 'symmetric')
+        #                                            ]))
+        #elif i.__contains__('Welch'):
+        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+        #                                            loader = lambda path: numpy.load(path),
+        #                                            extensions = ("npy"),
+        #                                            transform = torchvision.transforms.Compose([
+        #                                                numpy.squeeze,
+        #                                                _EEGPreprocessor(250, 0.5, 40),
+        #                                                EEGSignalToFeaturesWelch(250)
+        #                                            ]))
+        #elif i.__contains__('CWT'):
+        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+        #                                                 loader = lambda path: numpy.load(path),
+        #                                                 extensions = ("npy"),
+        #                                                 transform = torchvision.transforms.Compose([
+        #                                                     numpy.squeeze,
+        #                                                     _EEGPreprocessor(250, 0.5, 40),
+        #                                                     EEGSignalToFeaturesCWT(wavelet='db4')
+        #                                                 ])
+
         print('')
         print(f'Number of samples in dataset: {len(dataset)}')
         print('Classes:')
@@ -181,39 +183,37 @@ if __name__ == '__main__':
         for target in Counter([t for _, t in dataset]).most_common():
             print(f'  {dataset.classes[target[0]]}: {target[1]}')
 
-            accuracies=[]
+        print('')
+        print('Evaluate classifier perfomance...')
+        metrics = evaluate_classifier(model, dataset)
 
+        print('')
+        print(f'Accuracy at sample {dataset}: {round(metrics.accuracy, 2)}')
+        print(f'TPR at sample {dataset}: {round(metrics.tpr, 2)}')
+        print(f'TNR at sample {dataset}: {round(metrics.tnr, 2)}')
+        print(f'F1 score at sample {dataset}: {round(metrics.f1_score, 2)}')
+        print(f'AUROC at sample {dataset}: {round(metrics.auroc, 2)}')
+        print('')
 
-            for sample in range(0, len(dataset), 200):
+        # Write metrics to file
+        metrics_file.write(f'Model: {model_filename}\n')
+        metrics_file.write(f'Accuracy: {metrics.accuracy}\n')
+        metrics_file.write(f'TPR: {metrics.tpr}\n')
+        metrics_file.write(f'TNR: {metrics.tnr}\n')
+        metrics_file.write(f'F1 score: {metrics.f1_score}\n')
+        metrics_file.write(f'AUROC: {metrics.auroc}\n')
+        metrics_file.write('\n')
 
-                print('')
-                print('Evaluate classifier perfomance...')
-                metrics = evaluate_classifier(model, sample)
+        aurocs.append(metrics.auroc)
 
-                print('')
-                print(f'Accuracy at sample {sample}: {round(metrics.accuracy, 2)}')
-                print(f'TPR at sample {sample}: {round(metrics.tpr, 2)}')
-                print(f'TNR at sample {sample}: {round(metrics.tnr, 2)}')
-                print(f'F1 score at sample {sample}: {round(metrics.f1_score, 2)}')
-                print(f'AUROC at sample {sample}: {round(metrics.auroc, 2)}')
-                print('')
+    print(len(aurocs))
 
-                accuracies.append(metrics.accuracy)
-                aurocs.append(metrics.auroc)
-                samples.append(sample)
-
-            # Plot the accuracies
-            plt.plot(samples, accuracies, marker='o')
-            plt.xlabel('Sample Size')
-            plt.ylabel('Accuracy')
-            plt.title('Accuracy every 200 samples')
-            plt.show()
-
-            # Plot the accuracies
-            plt.plot(samples, aurocs, marker='o')
-            plt.xlabel('Sample Size')
-            plt.ylabel('Accuracy')
-            plt.title('AUROC every 200 samples')
-            plt.show()
+    # Plot the AUROCs
+    plt.plot(range(200, 1001, 200), aurocs, marker='o')
+    plt.xlabel('Sample Size')
+    plt.ylabel('AUROC')
+    plt.title('AUROC for Different Sample Sizes')
+    plt.savefig(args.plot_path)
+    plt.show()
 
 
