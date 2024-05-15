@@ -723,25 +723,30 @@ class GaussianDiffusion1D(nn.Module):
         img = torch.randn(shape, device=device)
         x_start = None
 
-        import matplotlib.pyplot as plt
+        # import matplotlib.pyplot as plt
 
         for t in tqdm(reversed(range(0, self.num_timesteps)), desc = 'sampling loop time step', total = self.num_timesteps):
             self_cond = x_start if self.self_condition else None
             img, x_start = self.p_sample(img, t, self_cond, label=label)
 
-            # At each timestep, we save the denoised image
-            plt.figure(figsize=(20, 7))
-            plt.plot(img[0, 0].cpu().numpy())
-            plt.savefig(f'results/model_sampling/{t}.png')
-            plt.close()
+            # plot_img = img[0, 0].cpu().numpy()
+            # # replace the first and last 10 datapoints with 0
+            # plot_img[:10] = plot_img[11]
+            # plot_img[-10:] = plot_img[-11]
 
-        import imageio
-        # Create a gif from the images
-        images = []
-        for t in range(self.num_timesteps):
-            images.append(imageio.imread(f'results/model_sampling/{t}.png'))
-        imageio.mimsave(f'results/model_sampling/sampling.gif', images, duration=0.5)
-        exit()
+            # plt.figure(figsize=(20, 7))
+            # plt.plot(plot_img)
+            # plt.ylim(0.045, 0.08)
+            # plt.savefig(f'results/model_sampling_{int(label[0,0].cpu().numpy())}/{t}.png')
+            # plt.close()
+
+        # import imageio
+        # images = []
+        # for t in range(self.num_timesteps - 100, self.num_timesteps):
+        #     images.append(imageio.imread(f'results/model_sampling_{int(label[0,0].cpu().numpy())}/{t}.png'))
+        # for _ in range(20):
+        #     images.append(imageio.imread(f'results/model_sampling_{int(label[0,0].cpu().numpy())}/0.png'))
+        # imageio.mimsave(f'results/model_sampling_{int(label[0,0].cpu().numpy())}/sampling.gif', images, duration=0.005)
 
         img = self.unnormalize(img)
         img = self.standarize(img)
