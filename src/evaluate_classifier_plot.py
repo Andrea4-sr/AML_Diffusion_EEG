@@ -123,6 +123,8 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_path', type = pathlib.Path, help = 'Path to the dataset')
     parser.add_argument('--plot_path', type=pathlib.Path, help = 'Path to dump the plot')
     parser.add_argument('--metrics_path', type = pathlib.Path, help = 'Name of the plot')
+    parser.add_argument('--metrics_file_name', type = str, help = 'Name of the metrics file you are saving. We recommend classifier name and tested data.')
+    parser.add_argument('--plot_name', type = str, help = 'Name of the plot. We recommend classifier name and tested data.')
     args = parser.parse_args()
 
     # if not os.path.isfile(args.model_path):
@@ -136,7 +138,8 @@ if __name__ == '__main__':
     aurocs = []
     sample_sizes = []
 
-    metrics_file_path = args.metrics_path / 'metrics.txt'
+    metrics_file_path = args.metrics_path / f"{args.metrics_file_name}.txt"
+    os.makedirs(args.metrics_path.parent, exist_ok=True)
     with open(metrics_file_path, 'w') as metrics_file:
         for i in os.listdir(args.model_path):
             print(f'Loading model {i}')
@@ -226,7 +229,11 @@ if __name__ == '__main__':
     plt.xlabel('Sample Size')
     plt.ylabel('AUROC')
     plt.title('AUROC for Different Sample Sizes')
-    plt.savefig(args.plot_path)
-    plt.show()
+
+    # Save the plot with a specific name
+    plot_filename = args.plot_path / f"{args.plot_name}.png"
+    os.makedirs(plot_filename.parent, exist_ok=True)  # Create the directory if it doesn't exist
+    plt.savefig(plot_filename)
+
 
 
