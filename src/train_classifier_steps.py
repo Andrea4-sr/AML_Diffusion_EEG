@@ -12,6 +12,9 @@ from sklearn.neural_network import MLPClassifier
 from scipy.signal import welch
 import torchvision
 import itertools
+from collections import Counter
+from sklearn.model_selection import train_test_split
+
 
 
 
@@ -104,6 +107,13 @@ def feature_classifier_combos(feat_ext_methods, classifiers):
     combos = list(itertools.product(feat_ext_methods, classifiers))
     return combos
 
+def load_and_transform_data(dataset, transform):
+    processed_data = []
+    for path, target in dataset.samples:
+        data = np.load(path)
+        transformed_data = transform(data)
+        processed_data.append((transformed_data, target))
+    return processed_data
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Train a classifier model based on the provided dataset.')
@@ -120,8 +130,8 @@ if __name__ == "__main__":
          print(f"Error: {args.model_dump_path} already exists")
          quit()
 
-    models = [GradientBoostingClassifier(n_estimators = 100), svm.SVC(probability=True), MLPClassifier()]
-    feature_extractors = [EEGSignalToFeaturesWelch, EEGSignalToFeaturesFFT, EEGSignalToFeaturesDWT] #EEGSignalToFeaturesCWT]
+    models = [svm.SVC(probability=True)] #GradientBoostingClassifier(n_estimators = 100), , MLPClassifier()]
+    feature_extractors = [EEGSignalToFeaturesFFT] # [EEGSignalToFeaturesWelch, , EEGSignalToFeaturesDWT] #EEGSignalToFeaturesCWT]
     combos = feature_classifier_combos(feature_extractors, models)
 
     for feature_extractor, classifier in combos:
@@ -130,16 +140,18 @@ if __name__ == "__main__":
         model_dump_path = args.model_dump_path / f"{model_name}.pkl"
         print(f'Using feature extractor: {feature_extractor.__name__}, and model: {classifier.__class__.__name__}')
 
-        if feature_extractor == EEGSignalToFeaturesDWT:
-            print('Loading dataset...')
-            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                         loader = lambda path: numpy.load(path),
-                                                         extensions = ("npy"),
-                                                         transform = torchvision.transforms.Compose([
-                                                            numpy.squeeze,
-                                                            _EEGPreprocessor(250, 0.5, 40),
-                                                            EEGSignalToFeaturesDWT('db4', 'symmetric')
-                                                         ]))
+
+        print('Loading dataset...')
+
+        transform = torchvision.transforms.Compose([numpy.squeeze,
+                                                   _EEGPreprocessor(250, 0.5, 40),
+                                                   EEGSignalToFeaturesFFT(sampling_rate=250)
+                                                   ])
+
+        dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+                                                     loader=lambda path: np.load(path),
+                                                     extensions=("npy",),
+                                                     transform=transform)
         #elif feature_extractor == EEGSignalToFeaturesCWT:
         #    print('Loading dataset...')
         #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
@@ -150,28 +162,42 @@ if __name__ == "__main__":
         #                                                    _EEGPreprocessor(250, 0.5, 60),
         #                                                    EEGSignalToFeaturesCWT(wavelet='db4')
         #                                                ]))
-        elif feature_extractor == EEGSignalToFeaturesFFT:
-            print('Loading dataset...')
-            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                         loader = lambda path: numpy.load(path),
-                                                         extensions = ("npy"),
-                                                         transform = torchvision.transforms.Compose([
-                                                            numpy.squeeze,
-                                                            _EEGPreprocessor(250, 0.5, 40),
-                                                            EEGSignalToFeaturesFFT(sampling_rate=250)
-                                                        ]))
-        elif feature_extractor == EEGSignalToFeaturesWelch:
-            print('Loading dataset...')
-            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                         loader = lambda path: numpy.load(path),
-                                                         extensions = ("npy"),
-                                                         transform = torchvision.transforms.Compose([
-                                                            numpy.squeeze,
-                                                            _EEGPreprocessor(250, 0.5, 40),
-                                                            EEGSignalToFeaturesWelch(sampling_rate=250)
-                                                        ]))
+
+        # elif feature_extractor == EEGSignalToFeaturesDWT:
+        #    print('Loading dataset...')
+        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+        #                                                 loader = lambda path: numpy.load(path),
+        #                                                 extensions = ("npy"),
+        #                                                 transform = torchvision.transforms.Compose([
+        #                                                    numpy.squeeze,
+        #                                                    _EEGPreprocessor(250, 0.5, 40),
+        #                                                    EEGSignalToFeaturesDWT('db4', 'symmetric')
+        #                                                 ]))
+
+        #elif feature_extractor == EEGSignalToFeaturesWelch:
+        #    print('Loading dataset...')
+        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+        #                                                 loader = lambda path: numpy.load(path),
+        #                                                 extensions = ("npy"),
+        #                                                 transform = torchvision.transforms.Compose([
+        #                                                    numpy.squeeze,
+        #                                                    _EEGPreprocessor(250, 0.5, 40),
+        #                                                    EEGSignalToFeaturesWelch(sampling_rate=250)
+        #                                                ]))
+
+        # Load and transform the entire dataset
+        processed_data = load_and_transform_data(dataset, transform)
+
         for sample_size in range(200, 1001, 200):
-            sample_dataset = dataset.samples[:sample_size]
+            # Ensure the sample dataset contains both classes
+            sample_dataset, _ = train_test_split(processed_data, train_size=sample_size,
+                                                 stratify=[target for _, target in processed_data])
+
+            class_counts = Counter([target for _, target in sample_dataset])
+            if len(class_counts) < 2:
+                print(f"Error: Not enough classes in the sample of size {sample_size}.")
+                continue
+
             print(f'Training classifier with {sample_size} samples...')
             model = train_classifier(classifier, sample_dataset)
 
@@ -184,13 +210,3 @@ if __name__ == "__main__":
                 pickle.dump(model, file)
 
             print("Done")
-
-        #print('Training classifier...')
-        #model = train_classifier(classifier, dataset)
-
-        #print(f'Storing classifier as {model_dump_path}...')
-        #os.makedirs(model_dump_path.parent, exist_ok=True)
-        #with open(model_dump_path, 'wb') as file:
-        #    pickle.dump(model, file)
-
-        #print("Done")
