@@ -156,15 +156,15 @@ if __name__ == '__main__':
                                                         _EEGPreprocessor(250, 0.5, 40),
                                                         EEGSignalToFeaturesWelch(250)
                                                     ]))
-        elif i.__contains__('CWT'):
-            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                         loader = lambda path: numpy.load(path),
-                                                         extensions = ("npy"),
-                                                         transform = torchvision.transforms.Compose([
-                                                             numpy.squeeze,
-                                                             _EEGPreprocessor(250, 0.5, 40),
-                                                             EEGSignalToFeaturesCWT(wavelet='db4')
-                                                         ])
+        #elif i.__contains__('CWT'):
+        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+        #                                                 loader = lambda path: numpy.load(path),
+        #                                                 extensions = ("npy"),
+        #                                                 transform = torchvision.transforms.Compose([
+        #                                                     numpy.squeeze,
+        #                                                     _EEGPreprocessor(250, 0.5, 40),
+        #                                                     EEGSignalToFeaturesCWT(wavelet='db4')
+        #                                                 ])
         elif i.__contains__('FFT'):
             dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
                                                          loader = lambda path: numpy.load(path),
@@ -173,7 +173,7 @@ if __name__ == '__main__':
                                                              numpy.squeeze,
                                                              _EEGPreprocessor(250, 0.5, 40),
                                                              EEGSignalToFeaturesFFT(sampling_rate=250)
-                                                         ])
+                                                         ]))
         print('')
         print(f'Number of samples in dataset: {len(dataset)}')
         print('Classes:')
@@ -181,39 +181,18 @@ if __name__ == '__main__':
         for target in Counter([t for _, t in dataset]).most_common():
             print(f'  {dataset.classes[target[0]]}: {target[1]}')
 
-            accuracies=[]
+            print('')
+            print('Evaluate classifier perfomance...')
+            metrics = evaluate_classifier(model, dataset)
+
+            print('')
+            print(f'Accuracy at sample {sample}: {round(metrics.accuracy, 2)}')
+            print(f'TPR at sample {sample}: {round(metrics.tpr, 2)}')
+            print(f'TNR at sample {sample}: {round(metrics.tnr, 2)}')
+            print(f'F1 score at sample {sample}: {round(metrics.f1_score, 2)}')
+            print(f'AUROC at sample {sample}: {round(metrics.auroc, 2)}')
+            print('')
 
 
-            for sample in range(0, len(dataset), 200):
-
-                print('')
-                print('Evaluate classifier perfomance...')
-                metrics = evaluate_classifier(model, sample)
-
-                print('')
-                print(f'Accuracy at sample {sample}: {round(metrics.accuracy, 2)}')
-                print(f'TPR at sample {sample}: {round(metrics.tpr, 2)}')
-                print(f'TNR at sample {sample}: {round(metrics.tnr, 2)}')
-                print(f'F1 score at sample {sample}: {round(metrics.f1_score, 2)}')
-                print(f'AUROC at sample {sample}: {round(metrics.auroc, 2)}')
-                print('')
-
-                accuracies.append(metrics.accuracy)
-                aurocs.append(metrics.auroc)
-                samples.append(sample)
-
-            # Plot the accuracies
-            plt.plot(samples, accuracies, marker='o')
-            plt.xlabel('Sample Size')
-            plt.ylabel('Accuracy')
-            plt.title('Accuracy every 200 samples')
-            plt.show()
-
-            # Plot the accuracies
-            plt.plot(samples, aurocs, marker='o')
-            plt.xlabel('Sample Size')
-            plt.ylabel('Accuracy')
-            plt.title('AUROC every 200 samples')
-            plt.show()
 
 
