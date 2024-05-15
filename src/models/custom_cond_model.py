@@ -723,9 +723,25 @@ class GaussianDiffusion1D(nn.Module):
         img = torch.randn(shape, device=device)
         x_start = None
 
+        import matplotlib.pyplot as plt
+
         for t in tqdm(reversed(range(0, self.num_timesteps)), desc = 'sampling loop time step', total = self.num_timesteps):
             self_cond = x_start if self.self_condition else None
             img, x_start = self.p_sample(img, t, self_cond, label=label)
+
+            # At each timestep, we save the denoised image
+            plt.figure(figsize=(20, 7))
+            plt.plot(img[0, 0].cpu().numpy())
+            plt.savefig(f'results/model_sampling/{t}.png')
+            plt.close()
+
+        import imageio
+        # Create a gif from the images
+        images = []
+        for t in range(self.num_timesteps):
+            images.append(imageio.imread(f'results/model_sampling/{t}.png'))
+        imageio.mimsave(f'results/model_sampling/sampling.gif', images, duration=0.5)
+        exit()
 
         img = self.unnormalize(img)
         img = self.standarize(img)
