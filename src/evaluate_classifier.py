@@ -109,7 +109,7 @@ if __name__ == '__main__':
                                                     extensions = ("npy"),
                                                     transform = torchvision.transforms.Compose([
                                                         numpy.squeeze,
-                                                        _EEGPreprocessor(250, 0.5, 40),
+                                                        # _EEGPreprocessor(250, 0.5, 40), Not needed, already done in prepare_eeg_dataset
                                                         EEGSignalToFeaturesDWT('db4', 'symmetric')
                                                     ]))
         elif i.__contains__('Welch'):
@@ -118,7 +118,7 @@ if __name__ == '__main__':
                                                     extensions = ("npy"),
                                                     transform = torchvision.transforms.Compose([
                                                         numpy.squeeze,
-                                                        _EEGPreprocessor(250, 0.5, 40),
+                                                        # _EEGPreprocessor(250, 0.5, 40), Not needed, already done in prepare_eeg_dataset
                                                         EEGSignalToFeaturesWelch(250)
                                                     ]))
         elif i.__contains__('FFT'):
@@ -127,7 +127,7 @@ if __name__ == '__main__':
                                                     extensions = ("npy"),
                                                     transform = torchvision.transforms.Compose([
                                                         numpy.squeeze,
-                                                        _EEGPreprocessor(250, 0.5, 40),
+                                                        # _EEGPreprocessor(250, 0.5, 40), Not needed, already done in prepare_eeg_dataset
                                                         EEGSignalToFeaturesFFT(250)
                                                     ]))
         print('')
