@@ -40,9 +40,16 @@ def sample_from_model(model_path, num_samples=1, label=None, output_directory=No
 
     if output_directory is not None:
         os.makedirs(output_directory, exist_ok=True)
-
+        
+        existing_files = [f for f in os.listdir(output_directory) if f.startswith('sample_') and f.endswith('.npy')]
+        if existing_files:
+            latest_sample_index = max(int(f.split('_')[1].split('.')[0]) for f in existing_files)
+        else:
+            latest_sample_index = 0
+        
         for i, sample in enumerate(samples):
-            file_path = os.path.join(output_directory, f'sample_{i+1}.npy')
+            file_index = latest_sample_index + i + 1
+            file_path = os.path.join(output_directory, f'sample_{file_index}.npy')
             np.save(file_path, sample.cpu().numpy())
     
     return samples
@@ -58,8 +65,9 @@ if __name__ == "__main__":
     # seizure_samples = sample_from_model("results\++ 2 Unet1D attn mlp - pred_x0\model-15.pt", num_samples=1000, label=1, output_directory="data/synthetic/best/fnsz/")
     # healthy_samples = sample_from_model("results\++ 2 Unet1D attn mlp - pred_x0\model-15.pt", num_samples=1000, label=0, output_directory="data/synthetic/best/non_seizure/")
     
-    # seizure_samples = sample_from_model("results\+ comb long 2 class Unet1D attn mlp - pred_x0\model-50.pt", num_samples=1000, label=1, output_directory="data/synthetic/noisy/fnsz/")
-    # healthy_samples = sample_from_model("results\+ comb long 2 class Unet1D attn mlp - pred_x0\model-50.pt", num_samples=1000, label=0, output_directory="data/synthetic/noisy/non_seizure/")
+    # for _ in range(10):
+    #     seizure_samples = sample_from_model("results\+ comb long 2 class Unet1D attn mlp - pred_x0\model-50.pt", num_samples=1000, label=1, output_directory="data/synthetic/classifier_train/fnsz/")
+    #     healthy_samples = sample_from_model("results\+ comb long 2 class Unet1D attn mlp - pred_x0\model-50.pt", num_samples=1000, label=0, output_directory="data/synthetic/classifier_train/non_seizure/")
 
     # seizure_samples = sample_from_model("results\++ long 2 class Unet1D attn mlp - pred_x0\model-50.pt", num_samples=1000, label=1, output_directory="data/synthetic/worst/fnsz/")
     # healthy_samples = sample_from_model("results\++ long 2 class Unet1D attn mlp - pred_x0\model-50.pt", num_samples=1000, label=0, output_directory="data/synthetic/worst/non_seizure/")
