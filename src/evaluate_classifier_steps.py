@@ -9,9 +9,12 @@ import pickle
 import pywt
 from sklearn import svm
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix, roc_auc_score
 from scipy.signal import welch
 import torchvision
+import itertools
+import matplotlib.pyplot as plt
 
 
 class _EEGPreprocessor:
@@ -41,6 +44,47 @@ class EEGSignalToFeaturesDWT:
           features = [_signal_to_features(n) for n in pywt.wavedec(signal, wavelet = self.wavelet, mode = self.mode)]
           return numpy.asarray(features).flatten()
 
+class EEGSignalToFeaturesFFT:
+
+    def __init__(self, sampling_rate):
+        self.sampling_rate = sampling_rate
+
+    def __call__(self, signal):
+        fft_result = np.fft.fft(signal)
+        magnitude_spectrum = numpy.abs(fft_result)
+        phase_spectrum = numpy.angle(fft_result)
+        features = np.concatenate((magnitude_spectrum, phase_spectrum))
+        return features
+
+class EEGSignalToFeaturesCWT:
+
+    def __init__(self, wavelet):
+        self.wavelet = wavelet
+        self.alpha_range = (8, 12)
+        self.beta_range = (12, 30)
+    def _calculate_medium_scales(self, sampling_rate):
+        alpha_scales = pywt.scale2frequency(self.wavelet, np.arange(64, sampling_rate)) * sampling_rate
+        beta_scales = pywt.scale2frequency(self.wavelet, np.arange(64, sampling_rate)) * sampling_rate
+
+        alpha_medium_scales = alpha_scales[(alpha_scales >= self.alpha_range[0]) & (alpha_scales <= self.alpha_range[1])]
+        beta_medium_scales = beta_scales[(beta_scales >= self.beta_range[0]) & (beta_scales <= self.beta_range[1])]
+
+        medium_scales = np.concatenate((alpha_medium_scales, beta_medium_scales))
+        return medium_scales
+
+    def __call__(self, signal):
+        medium_scales = self._calculate_medium_scales(sampling_rate=250)
+
+        features = []
+        for scale in medium_scales:
+            coefficients, _ = pywt.cwt(signal, scales=[scale], wavelet=self.wavelet)
+            features.append(coefficients.flatten())
+        features_array = np.asarray(features)
+        print(features_array.shape)
+        exit()
+        return np.asarray(features).flatten()
+
+
 class EEGSignalToFeaturesWelch:
     def __init__(self, sampling_rate, nperseg=None):
         self.sampling_rate = sampling_rate
@@ -51,17 +95,8 @@ class EEGSignalToFeaturesWelch:
         power = power[:70]
         power = np.log(power)
         return power
-    
-class EEGSignalToFeaturesFFT:
-    def __init__(self, sampling_rate):
-        self.sampling_rate = sampling_rate
 
-    def __call__(self, signal):
-        fft_result = np.fft.fft(signal)
-        magnitude_spectrum = numpy.abs(fft_result)
-        phase_spectrum = numpy.angle(fft_result)
-        features = np.concatenate((magnitude_spectrum, phase_spectrum))
-        return features
+
 
 class ClassifierPerformanceMetrics:
     def __init__(self, y_true, y_pred, y_proba):
@@ -121,30 +156,39 @@ if __name__ == '__main__':
                                                         _EEGPreprocessor(250, 0.5, 40),
                                                         EEGSignalToFeaturesWelch(250)
                                                     ]))
+        #elif i.__contains__('CWT'):
+        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+        #                                                 loader = lambda path: numpy.load(path),
+        #                                                 extensions = ("npy"),
+        #                                                 transform = torchvision.transforms.Compose([
+        #                                                     numpy.squeeze,
+        #                                                     _EEGPreprocessor(250, 0.5, 40),
+        #                                                     EEGSignalToFeaturesCWT(wavelet='db4')
+        #                                                 ])
         elif i.__contains__('FFT'):
             dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                    loader = lambda path: numpy.load(path),
-                                                    extensions = ("npy"),
-                                                    transform = torchvision.transforms.Compose([
-                                                        numpy.squeeze,
-                                                        _EEGPreprocessor(250, 0.5, 40),
-                                                        EEGSignalToFeaturesFFT(250)
-                                                    ]))
+                                                         loader = lambda path: numpy.load(path),
+                                                         extensions = ("npy"),
+                                                         transform = torchvision.transforms.Compose([
+                                                             numpy.squeeze,
+                                                             _EEGPreprocessor(250, 0.5, 40),
+                                                             EEGSignalToFeaturesFFT(sampling_rate=250)
+                                                         ]))
         print('')
         print(f'Number of samples in dataset: {len(dataset)}')
         print('Classes:')
 
         for target in Counter([t for _, t in dataset]).most_common():
             print(f'  {dataset.classes[target[0]]}: {target[1]}')
-        
-        print('')
-        print('Evaluate classifier perfomance...')
-        metrics = evaluate_classifier(model, dataset)
 
-        print('')
-        print(f'Accuracy: {round(metrics.accuracy, 2)}')
-        print(f'TPR: {round(metrics.tpr, 2)}')
-        print(f'TNR: {round(metrics.tnr, 2)}')
-        print(f'F1 score: {round(metrics.f1_score, 2)}')
-        print(f'AUROC: {round(metrics.auroc, 2)}')
-        print('')
+            print('')
+            print('Evaluate classifier perfomance...')
+            metrics = evaluate_classifier(model, dataset)
+
+            print('')
+            print(f'Accuracy at sample {sample}: {round(metrics.accuracy, 2)}')
+            print(f'TPR at sample {sample}: {round(metrics.tpr, 2)}')
+            print(f'TNR at sample {sample}: {round(metrics.tnr, 2)}')
+            print(f'F1 score at sample {sample}: {round(metrics.f1_score, 2)}')
+            print(f'AUROC at sample {sample}: {round(metrics.auroc, 2)}')
+            print('')

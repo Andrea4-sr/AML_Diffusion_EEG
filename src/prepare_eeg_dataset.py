@@ -12,6 +12,8 @@ import pathlib
 import pyedflib
 import scipy
 import tqdm
+import random
+random.seed(42)
 
 def _filenames_of_edf_csv_pairs(edf_dir: str):
     edf_files = glob.glob(os.path.join(edf_dir, "*.edf"))
@@ -171,7 +173,7 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                         do_with_samples: Callable[[numpy.typing.NDArray, str, str, int, int], int],
                         erode_channels_by_secs: None,
                         erode_ranges_by_secs: None,
-                        #notch_filter: int,
+                        notch_filter: int,
                         lowcut: float,
                         highcut: float,
                         max_files: None):
@@ -185,8 +187,11 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
 
     progress = tqdm.tqdm(total = len(edf_files) if max_files is None else max_files, unit = " files")
 
+    paired_files = list(zip(csv_files, edf_files))
+    random.shuffle(paired_files)
+
     try:
-        for csv_file_path, edf_file_path in zip(csv_files, edf_files):
+        for csv_file_path, edf_file_path in paired_files:
             with EdfReader(edf_file_path) as edf_file:
                 channels = [_normalize_channel_name(n) for n in edf_file.getSignalLabels()]
                 interesting_channel_indices = []
@@ -211,7 +216,7 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                     data_per_channel = [_bandpass_filter(signal, lowcut, highcut, target_frequency) for signal in data_per_channel]
                     # plt.plot(data_per_channel[0][10000:11000])
                     # plt.show()
-                    #data_per_channel = [_notch_filter(signal, notch_filter, target_frequency) for signal in data_per_channel] if notch_filter is not None else data_per_channel
+                    data_per_channel = [_notch_filter(signal, notch_filter, target_frequency) for signal in data_per_channel] if notch_filter is not None else data_per_channel
                     # plt.plot(data_per_channel[0][10000:11000])
                     # plt.show()
 
@@ -270,7 +275,7 @@ def _dump_sample(output_path: str, signal_data: numpy.typing.NDArray, source_fil
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'Process EDF files to create files with EEG data according to specification.')
     parser.add_argument('--frequency', type = int, help = 'Frequency the extracted data is sampled in')
-   # parser.add_argument('--notch_filter', type = int, default=None, help = 'Frequency of the notch filter')
+    parser.add_argument('--notch_filter', type = int, default=None, help = 'Frequency of the notch filter')
     parser.add_argument('--lowcut', type = float, help = 'Lowcut frequency of the bandpass filter')
     parser.add_argument('--highcut', type = float, help = 'Highcut frequency of the bandpass filter')
     parser.add_argument('--duration', type = int, help = 'Length of signals in seconds written to output files')
@@ -301,7 +306,7 @@ if __name__ == "__main__":
                         lambda signal_data, source_filename, label, start_index, end_index: _dump_sample(args.output_path, signal_data, source_filename, label, start_index, end_index),
                         60,
                         None,
-                        #args.notch_filter,
+                        args.notch_filter,
                         args.lowcut,
                         args.highcut,
                         args.max_files)
@@ -317,10 +322,10 @@ if __name__ == "__main__":
                         lambda signal_data, source_filename, label, start_index, end_index: _dump_sample(args.output_path, signal_data, source_filename, label, start_index, end_index),
                         60,
                         20,
-                        #args.notch_filter,
+                        args.notch_filter,
                         args.lowcut,
                         args.highcut,
-                        args.max_files #([len(os.listdir(os.path.join(args.output_path, classes_to_extract[i]))) for i in range(len(classes_to_extract))]))
+                        max([len(os.listdir(os.path.join(args.output_path, classes_to_extract[i]))) for i in range(len(classes_to_extract))]))
     
     # python src\prepare_eeg_dataset.py --input_path data/seizure_data/train --output_path data/train_250hz_05_70_n60_CZ --duration 4 --channels "CZ" --classes "fnsz,gnsz" --frequency 250 --notch_filter 60 --lowcut 0.5 --highcut 70
 

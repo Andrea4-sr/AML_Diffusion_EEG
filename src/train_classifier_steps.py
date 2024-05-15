@@ -170,13 +170,27 @@ if __name__ == "__main__":
                                                             _EEGPreprocessor(250, 0.5, 40),
                                                             EEGSignalToFeaturesWelch(sampling_rate=250)
                                                         ]))
-    
-        print('Training classifier...')
-        model = train_classifier(classifier, dataset)
+        for sample_size in range(200, 1001, 200):
+            sample_dataset = dataset.samples[:sample_size]
+            print(f'Training classifier with {sample_size} samples...')
+            model = train_classifier(classifier, sample_dataset)
 
-        print(f'Storing classifier as {model_dump_path}...')
-        os.makedirs(model_dump_path.parent, exist_ok=True)
-        with open(model_dump_path, 'wb') as file:
-            pickle.dump(model, file)
+            model_name = f"{feature_extractor.__name__}_{classifier.__class__.__name__}_{sample_size}_samples.pkl"
+            model_dump_path = args.model_dump_path / model_name
 
-        print("Done")
+            print(f'Storing classifier as {model_dump_path}...')
+            os.makedirs(model_dump_path.parent, exist_ok=True)
+            with open(model_dump_path, 'wb') as file:
+                pickle.dump(model, file)
+
+            print("Done")
+
+        #print('Training classifier...')
+        #model = train_classifier(classifier, dataset)
+
+        #print(f'Storing classifier as {model_dump_path}...')
+        #os.makedirs(model_dump_path.parent, exist_ok=True)
+        #with open(model_dump_path, 'wb') as file:
+        #    pickle.dump(model, file)
+
+        #print("Done")
