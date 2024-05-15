@@ -120,8 +120,8 @@ if __name__ == "__main__":
          print(f"Error: {args.model_dump_path} already exists")
          quit()
 
-    models = [GradientBoostingClassifier(n_estimators = 100), svm.SVC(probability=True), MLPClassifier()]
-    feature_extractors = [EEGSignalToFeaturesWelch, EEGSignalToFeaturesFFT, EEGSignalToFeaturesDWT] #EEGSignalToFeaturesCWT]
+    models = [svm.SVC(probability=True)]#GradientBoostingClassifier(n_estimators = 100), MLPClassifier()]
+    feature_extractors = [EEGSignalToFeaturesFFT] #EEGSignalToFeaturesWelch , EEGSignalToFeaturesDWT] #EEGSignalToFeaturesCWT]
     combos = feature_classifier_combos(feature_extractors, models)
 
     for feature_extractor, classifier in combos:
@@ -130,16 +130,16 @@ if __name__ == "__main__":
         model_dump_path = args.model_dump_path / f"{model_name}.pkl"
         print(f'Using feature extractor: {feature_extractor.__name__}, and model: {classifier.__class__.__name__}')
 
-        if feature_extractor == EEGSignalToFeaturesDWT:
-            print('Loading dataset...')
-            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                         loader = lambda path: numpy.load(path),
-                                                         extensions = ("npy"),
-                                                         transform = torchvision.transforms.Compose([
-                                                            numpy.squeeze,
-                                                            _EEGPreprocessor(250, 0.5, 40),
-                                                            EEGSignalToFeaturesDWT('db4', 'symmetric')
-                                                         ]))
+        #if feature_extractor == EEGSignalToFeaturesDWT:
+        #    print('Loading dataset...')
+        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+        #                                                 loader = lambda path: numpy.load(path),
+        #                                                 extensions = ("npy"),
+        #                                                 transform = torchvision.transforms.Compose([
+        #                                                    numpy.squeeze,
+        #                                                    _EEGPreprocessor(250, 0.5, 40),
+        #                                                    EEGSignalToFeaturesDWT('db4', 'symmetric')
+        #                                                 ]))
         #elif feature_extractor == EEGSignalToFeaturesCWT:
         #    print('Loading dataset...')
         #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
@@ -150,7 +150,7 @@ if __name__ == "__main__":
         #                                                    _EEGPreprocessor(250, 0.5, 60),
         #                                                    EEGSignalToFeaturesCWT(wavelet='db4')
         #                                                ]))
-        elif feature_extractor == EEGSignalToFeaturesFFT:
+        if feature_extractor == EEGSignalToFeaturesFFT:
             print('Loading dataset...')
             dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
                                                          loader = lambda path: numpy.load(path),
@@ -160,16 +160,16 @@ if __name__ == "__main__":
                                                             _EEGPreprocessor(250, 0.5, 40),
                                                             EEGSignalToFeaturesFFT(sampling_rate=250)
                                                         ]))
-        elif feature_extractor == EEGSignalToFeaturesWelch:
-            print('Loading dataset...')
-            dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
-                                                         loader = lambda path: numpy.load(path),
-                                                         extensions = ("npy"),
-                                                         transform = torchvision.transforms.Compose([
-                                                            numpy.squeeze,
-                                                            _EEGPreprocessor(250, 0.5, 40),
-                                                            EEGSignalToFeaturesWelch(sampling_rate=250)
-                                                        ]))
+        #elif feature_extractor == EEGSignalToFeaturesWelch:
+        #    print('Loading dataset...')
+        #    dataset = torchvision.datasets.DatasetFolder(args.dataset_path,
+        #                                                 loader = lambda path: numpy.load(path),
+        #                                                 extensions = ("npy"),
+        #                                                 transform = torchvision.transforms.Compose([
+        #                                                    numpy.squeeze,
+        #                                                    _EEGPreprocessor(250, 0.5, 40),
+        #                                                    EEGSignalToFeaturesWelch(sampling_rate=250)
+        #                                                ]))
     
         print('Training classifier...')
         model = train_classifier(classifier, dataset)
