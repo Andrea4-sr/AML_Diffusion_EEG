@@ -3,8 +3,11 @@ numpy
 scipy
 scikit-learn
 torchvision
+ema_pytorch
 pywavelets
 matplotlib
 mne
 pandas
 pyedflib
+pywt
+tqdm
