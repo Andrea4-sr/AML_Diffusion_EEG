@@ -6,3 +6,4 @@ torchvision
 pywavelets
 matplotlib
 mne
+pandas
