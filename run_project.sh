@@ -10,10 +10,10 @@ VALIDATION_REAL="data/real/validation"
 TRAIN_DATASET_SYNTH="data/synthetic/classifier_train"
 VALIDATION_SYNTH="data/synthetic/validation"
 
-REAL_MODEL_DUMP_DIR="trained_classifiers/tutors/trained_on_real"
-SYNTH_MODEL_DUMP_DIR="trained_classifiers/tutors/trained_on_synth"
-RESULTS_REAL_DIR="results/tutors/eval_trained_real"
-RESULTS_SYNTH_DIR="results/tutors/eval_trained_synth"
+REAL_MODEL_DUMP_DIR="tutors/trained_classifiers/trained_on_real"
+SYNTH_MODEL_DUMP_DIR="tutors/trained_classifiers/trained_on_synth"
+RESULTS_REAL_DIR="tutors/results/eval_trained_real"
+RESULTS_SYNTH_DIR="tutors/results/eval_trained_synth"
 
 
 # Check if required commands are available
