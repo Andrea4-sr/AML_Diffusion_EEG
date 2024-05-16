@@ -1,29 +1,6 @@
 # EEG Classifier Project
 
-This project contains scripts to train and evaluate machine learning classifiers for EEG data. The classifiers are trained on both real and synthetic data, and evaluated on both real and synthetic validation sets.
-
-## Directory Structure
-
-.
-├── data
-│ ├── real
-│ │ ├── classifier_train
-│ │ └── validation
-│ ├── synthetic
-│ │ ├── classifier_train
-│ │ └── validation
-├── results
-│ ├── eval_trained_real
-│ └── eval_trained_synth
-├── trained_classifiers
-│ ├── trained_on_real
-│ └── trained_on_synth
-├── src
-│ ├── train_classifier_steps.py
-│ └── evaluate_classifier_plot.py
-├── requirements.txt
-└── run_project.sh
-
+This project contains scripts to train and evaluate machine learning classifiers for EEG real and synthetic data. The classifiers are trained on both real and synthetic data, and evaluated on both real and synthetic validation sets.
 
 ## Setup
 
