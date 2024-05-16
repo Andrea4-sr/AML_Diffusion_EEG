@@ -14,12 +14,32 @@ REAL_MODEL_DUMP_DIR="tutors/trained_classifiers/trained_on_real"
 SYNTH_MODEL_DUMP_DIR="tutors/trained_classifiers/trained_on_synth"
 RESULTS_REAL_DIR="tutors/results/eval_trained_real"
 RESULTS_SYNTH_DIR="tutors/results/eval_trained_synth"
-
+VENV_DIR="venv"
 
 # Check if required commands are available
 command -v python3 >/dev/null 2>&1 || { echo >&2 "Python3 is required but it's not installed. Aborting."; exit 1; }
-command -v pip >/dev/null 2>&1 || { echo >&2 "pip is required but it's not installed. Aborting."; exit 1; }
 
+# Check if pip is available, if not install it
+if ! command -v pip >/dev/null 2>&1; then
+  echo "pip is required but it's not installed. Installing pip..."
+  curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+  python3 get-pip.py
+  rm get-pip.py
+else
+  echo "pip is already installed."
+fi
+
+# Create a virtual environment (if not already created)
+if [ ! -d "$VENV_DIR" ]; then
+  echo "Creating a virtual environment..."
+  python3 -m venv "$VENV_DIR"
+else
+  echo "Virtual environment already exists."
+fi
+
+# Activate the virtual environment
+echo "Activating the virtual environment..."
+source "$VENV_DIR/bin/activate"
 
 # Install dependencies
 echo "Installing dependencies..."
@@ -33,6 +53,8 @@ directories=(
   "$VALIDATION_REAL"
   "$TRAIN_DATASET_SYNTH"
   "$VALIDATION_SYNTH"
+  "$REAL_MODEL_DUMP_DIR"
+  "$SYNTH_MODEL_DUMP_DIR"
   "$RESULTS_REAL_DIR"
   "$RESULTS_SYNTH_DIR"
 )
@@ -46,8 +68,6 @@ for dir in "${directories[@]}"; do
   fi
 done
 
-
-
 # Train the classifier on real data
 echo "Training the classifier on real data..."
 python3 src/train_classifier_steps.py --dataset_path "$TRAIN_DATASET_REAL" --model_dump_path "$REAL_MODEL_DUMP_DIR"
@@ -56,22 +76,26 @@ python3 src/train_classifier_steps.py --dataset_path "$TRAIN_DATASET_REAL" --mod
 echo "Evaluating the classifier on real data..."
 python3 src/evaluate_classifier_plot.py --model_path "$REAL_MODEL_DUMP_DIR" --dataset_path "$VALIDATION_REAL" --plot_path "$RESULTS_REAL_DIR" --metrics_path "$RESULTS_REAL_DIR/" --metrics_file_name "svc_eval_real_real" --plot_name "svc_eval_real_real"
 
-# Evaluate the classifier on  synthetic data
+# Evaluate the classifier on synthetic data
 echo "Evaluating the classifier on synthetic data..."
 python3 src/evaluate_classifier_plot.py --model_path "$REAL_MODEL_DUMP_DIR" --dataset_path "$VALIDATION_SYNTH" --plot_path "$RESULTS_REAL_DIR" --metrics_path "$RESULTS_REAL_DIR" --metrics_file_name "svc_eval_real_synth" --plot_name "svc_eval_real_synth"
 
-
 echo "Now we train the classifier on synthetic data and evaluate on real and synthetic data."
 
-# Train the classifier on real data
+# Train the classifier on synthetic data
 echo "Training the classifier on synthetic data..."
 python3 src/train_classifier_steps.py --dataset_path "$TRAIN_DATASET_SYNTH" --model_dump_path "$SYNTH_MODEL_DUMP_DIR"
 
-echo "Evaluating the classifier on real data"
-python3 src/evaluate_classifier_plot.py --model_path "$SYNTH_MODEL_DUMP_DIR" --dataset_path "$VALIDATION_REAL" --plot_path "$RESULTS_SYNTH_DIR" --metrics_path "$RESULTS_SYNTH_DIR" --metrics_file_name "svc_eval_synth_real" --plot_name "svc_eval_synth_real"
+# Evaluate the classifier on real data
+echo "Evaluating the classifier on real data..."
+python3 src/evaluate_classifier_plot.gpy --model_path "$SYNTH_MODEL_DUMP_DIR" --dataset_path "$VALIDATION_REAL" --plot_path "$RESULTS_SYNTH_DIR" --metrics_path "$RESULTS_SYNTH_DIR" --metrics_file_name "svc_eval_synth_real" --plot_name "svc_eval_synth_real"
 
-echo "Evaluating the classifier on synthetic data"
+# Evaluate the classifier on synthetic data
+echo "Evaluating the classifier on synthetic data..."
 python3 src/evaluate_classifier_plot.py --model_path "$SYNTH_MODEL_DUMP_DIR" --dataset_path "$VALIDATION_SYNTH" --plot_path "$RESULTS_SYNTH_DIR" --metrics_path "$RESULTS_SYNTH_DIR" --metrics_file_name "svc_eval_synth_synth" --plot_name "svc_eval_synth_synth"
 
+# Deactivate the virtual environment
+echo "Deactivating the virtual environment..."
+deactivate
 
 echo "Done."
