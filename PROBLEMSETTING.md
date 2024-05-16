@@ -1,4 +1,4 @@
-# Conditional Latent Diffusion for Temporal Brain Data Synthesis
+# Conditional Diffusion for EEG Data Synthesis
 
 The use of synthetic data for model training is increasingly accepted across various domains, especially for fine-tuning LLMs using synthetic data of more capable models [1], but also within the image domain, using diffusion models to create high quality images [2, 3, 4]. Our work extends this paradigm to one-dimensional time series generation, focusing on EEG data where large, balanced datasets are scarce. We introduce a conditional latent diffusion model, influenced by advancements in image synthesis [5], to generate EEG samples of both healthy and seizure-related events. By facilitating the generation of targeted EEG datasets, our approach offers a practical tool for data availability and class imbalance issues.
 
