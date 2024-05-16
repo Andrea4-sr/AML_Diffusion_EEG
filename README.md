@@ -34,7 +34,7 @@ pip install -r requirements.txt
 To sample from the pretrained diffusion model, download the weights of the model [here (227 MB)](https://filesender.switch.ch/filesender2/?s=download&token=159a54a2-7962-4844-94da-ab99eba36c55).
 
 1. Download the weights and add them to a `weights` folder (in root).
-2. Run the `sample_from_model.py` file to generate and visualize synthetic EEG samples. (Warning: CUDA might be required to run this script.)
+2. Run the `src/sample_from_model.py` file to generate and visualize synthetic EEG samples. (Warning: CUDA might be required to run this script.)
 
 ## Reproducing validation results
 
