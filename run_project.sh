@@ -88,7 +88,7 @@ python3 src/train_classifier_steps.py --dataset_path "$TRAIN_DATASET_SYNTH" --mo
 
 # Evaluate the classifier on real data
 echo "Evaluating the classifier on real data..."
-python3 src/evaluate_classifier_plot.gpy --model_path "$SYNTH_MODEL_DUMP_DIR" --dataset_path "$VALIDATION_REAL" --plot_path "$RESULTS_SYNTH_DIR" --metrics_path "$RESULTS_SYNTH_DIR" --metrics_file_name "svc_eval_synth_real" --plot_name "svc_eval_synth_real"
+python3 src/evaluate_classifier_plot.py --model_path "$SYNTH_MODEL_DUMP_DIR" --dataset_path "$VALIDATION_REAL" --plot_path "$RESULTS_SYNTH_DIR" --metrics_path "$RESULTS_SYNTH_DIR" --metrics_file_name "svc_eval_synth_real" --plot_name "svc_eval_synth_real"
 
 # Evaluate the classifier on synthetic data
 echo "Evaluating the classifier on synthetic data..."
