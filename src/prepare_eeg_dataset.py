@@ -19,7 +19,7 @@ random.seed(20)
 def _filenames_of_edf_csv_pairs(edf_dir: str):
     edf_files = glob.glob(os.path.join(edf_dir, "*.edf"))
     filenames = [os.path.splitext(os.path.basename(x))[0] for x in edf_files]
-    filenames_with_csv_and_edf = [x for x in filenames if os.path.isfile(os.path.join(edf_dir, x + ".csv")) ]# and os.path.isfile(os.path.join(edf_dir, ".edf"))] # not necessary since the initial list is based on edf files existing.
+    filenames_with_csv_and_edf = [x for x in filenames if os.path.isfile(os.path.join(edf_dir, x + ".csv")) ]
     return sorted(filenames_with_csv_and_edf)
 
 

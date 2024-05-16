@@ -27,6 +27,12 @@ from tqdm.auto import tqdm
 
 from models.custom_cond_model import GaussianDiffusion1D
 
+# ------------------------------------
+# Base trainer taken from: https://github.com/lucidrains/denoising-diffusion-pytorch/
+# (an implementation of Denoising Diffusion Probabilistic Models in pytorch)
+# ------------------------------------
+
+
 # helpers functions
 
 def exists(x):
@@ -128,7 +134,7 @@ def load_sleep_data_and_labels(base_path, class_labels):
 
     return combined_data, combined_labels
 
-
+# dataset
 
 class Dataset1D(Dataset):
     def __init__(self, base_path, class_labels, no_classes = False, test = False):
@@ -368,7 +374,7 @@ class Trainer1D(object):
                                     all_samples_list = list(map(lambda n: self.ema.ema_model.sample(batch_size=1, label=torch.tensor([value], dtype=torch.float32).unsqueeze(0).to(device)), batches))
 
                                     plt.figure(figsize=(10, 5))
-                                    plt.plot(all_samples_list[0].squeeze().cpu().numpy()) # [10:-10]
+                                    plt.plot(all_samples_list[0].squeeze().cpu().numpy())
                                     plt.savefig(str(self.results_folder / f'{self.step}_sample_{key}.png'))
                                     plt.close()
                                     if exists(self.wandb): self.wandb.log({f"pred {key}": [self.wandb.Image(os.path.join(self.results_folder, f'{self.step}_sample_{key}.png'), caption=f"Prediction {key} step {self.step}")]})
@@ -394,5 +400,4 @@ class Trainer1D(object):
 
 if __name__ == '__main__':
 
-    # data = load_sleep_data_and_labels('data/sleep_data', {'wake': 0.0})
-    dataset = Combined_Dataset1D('data/train_250hz_05_70_n60_CZ', class_labels={'fnsz': 1.0}, test=False)
+    dataset = Dataset1D('data/train_250hz_05_70_n60_CZ', {'non_seizure': 0.0, 'fnsz': 1.0})

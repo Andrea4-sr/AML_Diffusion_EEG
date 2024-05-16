@@ -1,6 +1,5 @@
 import argparse
 from collections import Counter
-from eeg_preprocessing import EEGPreprocessor
 import numpy
 import numpy as np
 import os
@@ -16,16 +15,6 @@ import torchvision
 import itertools
 import matplotlib.pyplot as plt
 
-
-class _EEGPreprocessor:
-    def __init__(self, sampling_rate, lowcut, highcut):
-        self.sampling_rate = sampling_rate
-        self.lowcut = lowcut
-        self.highcut = highcut
-    
-    def __call__(self, data):
-        preprocessor = EEGPreprocessor(data)
-        return preprocessor.bandpass_fitler(data, self.sampling_rate, self.lowcut, self.highcut)
 
 
 def _signal_to_features(signal):
@@ -127,10 +116,6 @@ if __name__ == '__main__':
     parser.add_argument('--plot_name', type = str, help = 'Name of the plot. We recommend classifier name and tested data.')
     args = parser.parse_args()
 
-    # if not os.path.isfile(args.model_path):
-    #     print(f'Error: {args.model_path} does not exist (or is no file or not accessible)')
-    #     quit()
-
     if not os.path.isdir(args.dataset_path):
         print(f'Error: {args.dataset_path} does not exist (or is no folder or not accessible)')
         quit()
@@ -156,7 +141,6 @@ if __name__ == '__main__':
                                                          extensions=("npy"),
                                                          transform=torchvision.transforms.Compose([
                                                              numpy.squeeze,
-                                                            #  _EEGPreprocessor(250, 0.5, 40),
                                                              EEGSignalToFeaturesFFT(sampling_rate=250)
                                                          ]))
 

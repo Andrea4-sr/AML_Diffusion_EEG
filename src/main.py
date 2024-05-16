@@ -19,7 +19,6 @@ torch.set_float32_matmul_precision('medium')
 
 from models.non_cond_model import Unet1D, GaussianDiffusion1D
 from models.custom_cond_model import Unet1D as custom_Unet1D, GaussianDiffusion1D as custom_GaussianDiffusion1D
-# from models.karras_cond_model import Unet1D as karras_Unet1D, GaussianDiffusion1D as karras_GaussianDiffusion1D
 from trainer import Trainer1D
 from trainer import Dataset1D, Combined_Dataset1D
 

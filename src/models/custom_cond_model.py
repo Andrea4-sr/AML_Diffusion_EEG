@@ -12,6 +12,7 @@ import torch.nn.functional as F
 from torch.cuda.amp import autocast
 from torch.optim import Adam
 from torch.utils.data import Dataset, DataLoader
+torch.manual_seed(20)
 
 from einops import rearrange, reduce
 from einops.layers.torch import Rearrange
@@ -21,7 +22,10 @@ from ema_pytorch import EMA
 
 from tqdm.auto import tqdm
 
-from denoising_diffusion_pytorch.version import __version__
+# ------------------------------------
+# Base model taken from: https://github.com/lucidrains/denoising-diffusion-pytorch/
+# (an implementation of Denoising Diffusion Probabilistic Models in pytorch)
+# ------------------------------------
 
 # constants
 

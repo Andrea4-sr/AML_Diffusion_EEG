@@ -1,5 +1,4 @@
 import argparse
-from eeg_preprocessing import EEGPreprocessor
 import numpy
 import numpy as np
 import os
@@ -10,6 +9,7 @@ from sklearn import svm
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neural_network import MLPClassifier
 from scipy.signal import welch
+from scipy.signal import butter, filtfilt
 import torchvision
 import itertools
 from collections import Counter
@@ -20,15 +20,23 @@ random.seed(20)
 
 
 
-class _EEGPreprocessor:
+class EEGPreprocessor:
     def __init__(self, sampling_rate, lowcut, highcut):
         self.sampling_rate = sampling_rate
         self.lowcut = lowcut
         self.highcut = highcut
     
     def __call__(self, data):
-        preprocessor = EEGPreprocessor(data)
-        return preprocessor.bandpass_fitler(data, self.sampling_rate, self.lowcut, self.highcut)
+        return self.bandpass_fitler(data, self.sampling_rate, self.lowcut, self.highcut)
+    
+    def bandpass_fitler(self, data, sampling_rate, lowcut, highcut):
+        nyq = 0.5 * sampling_rate
+        low = lowcut/nyq
+        high = highcut/nyq
+        order = 2
+        b, a = butter(order, [low, high], btype='band')
+        filtered_data = filtfilt(b, a, data)
+        return filtered_data
 
 
 def _signal_to_features(signal):
@@ -119,7 +127,7 @@ if __name__ == "__main__":
         print('Loading dataset...')
 
         transform = torchvision.transforms.Compose([numpy.squeeze,
-                                                   _EEGPreprocessor(250, 0.5, 40),
+                                                   EEGPreprocessor(250, 0.5, 40),
                                                    EEGSignalToFeaturesFFT(sampling_rate=250)
                                                    ])
 

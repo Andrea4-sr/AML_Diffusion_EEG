@@ -57,22 +57,21 @@ def sample_from_model(model_path, num_samples=1, label=None, output_directory=No
 
 if __name__ == "__main__":
 
-    model = "weights\++ 2 Unet1D attn mlp - pred_x0\model-15.pt"
+    model = "weights/diffusion_weights.pt"
 
     seizure_samples = sample_from_model(model, num_samples=5, label=1, output_directory=None)
     healthy_samples = sample_from_model(model, num_samples=5, label=0, output_directory=None)
+
     plt.figure(figsize=(10, 20)) 
     plt.ylim(-3, 3)
     for i in range(4):
         plt.subplot(4, 2, 2 * i + 1)
         plt.plot(healthy_samples[i].squeeze().cpu().numpy()[50:-50])
         plt.ylim(-3, 3)
-        # plt.title('Healthy Sample ' + str(i + 1))
 
         plt.subplot(4, 2, 2 * i + 2)
         plt.plot(seizure_samples[i].squeeze().cpu().numpy()[50:-50])
         plt.ylim(-3, 3)
-        # plt.title('Seizure Sample ' + str(i + 1))
 
     plt.tight_layout()
     # plt.savefig('example.png')
