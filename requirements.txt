@@ -5,3 +5,4 @@ scikit-learn
 torchvision
 pywavelets
 matplotlib
+mne
