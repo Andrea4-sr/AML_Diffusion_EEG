@@ -7,3 +7,4 @@ pywavelets
 matplotlib
 mne
 pandas
+pyedflib
