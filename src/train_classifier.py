@@ -21,9 +21,9 @@ class EEGPreprocessor:
         self.highcut = highcut
     
     def __call__(self, data):
-        return self.bandpass_fitler(data, self.sampling_rate, self.lowcut, self.highcut)
+        return self.bandpass_filter(data, self.sampling_rate, self.lowcut, self.highcut)
     
-    def bandpass_fitler(self, data, sampling_rate, lowcut, highcut):
+    def bandpass_filter(self, data, sampling_rate, lowcut, highcut):
         nyq = 0.5 * sampling_rate
         low = lowcut/nyq
         high = highcut/nyq
