@@ -9,5 +9,5 @@ matplotlib
 mne
 pandas
 pyedflib
-pywt
+PyWavelets
 tqdm

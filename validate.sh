@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 TRAIN_DATASET_REAL="data/real/classifier_train"
 VALIDATION_REAL="data/real/validation"
 TRAIN_DATASET_SYNTH="data/synthetic/classifier_train"
@@ -37,7 +39,7 @@ python3 src/evaluate_classifier_plot.py --model_path "$SYNTH_MODEL_DUMP_DIR" --d
 
 # Train the classifier on synthetic data with 20k steps
 echo "Training the classifier on synthetic data with 20k steps... (this might take 5-10 mins)"
-python3 src/train_classifier_steps.py --dataset_path "$TRAIN_DATASET_SYNTH" --model_dump_path "$SYNTH_MODEL_20k_DUMP_DIR" --train_steps 20000
+python3 src/train_classifier_steps.py --dataset_path "$TRAIN_DATASET_SYNTH" --model_dump_path "$SYNTH_MODEL_20k_DUMP_DIR" --n_samples 20000
 
 # Evaluate the classifier on real data
 echo "Evaluating the classifier on real data..."
