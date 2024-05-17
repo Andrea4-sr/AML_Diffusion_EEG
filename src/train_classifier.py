@@ -15,6 +15,7 @@ import itertools
 
 
 class EEGPreprocessor:
+    """Applies preprocessing steps to raw EEG signals."""
     def __init__(self, sampling_rate, lowcut, highcut):
         self.sampling_rate = sampling_rate
         self.lowcut = lowcut
@@ -34,23 +35,25 @@ class EEGPreprocessor:
 
 
 def _signal_to_features(signal):
-     signal = signal.squeeze()
-     std = numpy.std(signal)
-     percentiles = numpy.percentile(signal, [10, 20, 30, 40, 50, 60, 70, 80, 90])
-     return numpy.append(std, percentiles)
+    """Converts signal to feature vector composed of standard deviation of the signal and percentiles."""
+    signal = signal.squeeze()
+    std = numpy.std(signal)
+    percentiles = numpy.percentile(signal, [10, 20, 30, 40, 50, 60, 70, 80, 90])
+    return numpy.append(std, percentiles)
 
 
 class EEGSignalToFeaturesDWT:
-     def __init__(self, wavelet, mode):
-          self.wavelet = wavelet
-          self.mode = mode
-     
-     def __call__(self, signal):
-          features = [_signal_to_features(n) for n in pywt.wavedec(signal, wavelet = self.wavelet, mode = self.mode)]
-          return numpy.asarray(features).flatten()
+    """Extracts features using Discrete Wavelet Transform (DWT)."""
+    def __init__(self, wavelet, mode):
+        self.wavelet = wavelet
+        self.mode = mode
+    
+    def __call__(self, signal):
+        features = [_signal_to_features(n) for n in pywt.wavedec(signal, wavelet = self.wavelet, mode = self.mode)]
+        return numpy.asarray(features).flatten()
 
 class EEGSignalToFeaturesFFT:
-
+    """Extracts features using Fast Fourier Transform (FFT)."""
     def __init__(self, sampling_rate):
         self.sampling_rate = sampling_rate
 
@@ -62,6 +65,7 @@ class EEGSignalToFeaturesFFT:
         return features
 
 class EEGSignalToFeaturesCWT:
+    """Extracts features using Continuous Wavelet Transform (CWT)."""
     def __init__(self, wavelet):
         self.wavelet = wavelet
         self.alpha_range = (8, 12)
@@ -87,6 +91,7 @@ class EEGSignalToFeaturesCWT:
         return np.asarray(features).flatten()
 
 class EEGSignalToFeaturesWelch:
+    """Extracts features using Welch's method."""
     def __init__(self, sampling_rate, nperseg=None):
         self.sampling_rate = sampling_rate
         self.nperseg = nperseg or sampling_rate // 2
@@ -99,12 +104,13 @@ class EEGSignalToFeaturesWelch:
 
 
 def train_classifier(model, dataset):
-     feature_list, target_list = zip(*dataset)
-     model.fit(feature_list, target_list)
-     return model
+    """Trains a classifier on a given dataset."""
+    feature_list, target_list = zip(*dataset)
+    model.fit(feature_list, target_list)
+    return model
 
 def feature_classifier_combos(feat_ext_methods, classifiers):
-
+    """Returns a list of combinations of feature extraction methods and classifiers."""
     combos = list(itertools.product(feat_ext_methods, classifiers))
     return combos
 

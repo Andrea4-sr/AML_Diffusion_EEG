@@ -16,25 +16,25 @@ import itertools
 import matplotlib.pyplot as plt
 
 
-# Convert signal to feature vector composed of standard deviation of the signal and percentiles
 def _signal_to_features(signal):
-     signal = signal.squeeze()
-     std = numpy.std(signal)
-     percentiles = numpy.percentile(signal, [10, 20, 30, 40, 50, 60, 70, 80, 90])
-     return numpy.append(std, percentiles)
+    """Converts signal to feature vector composed of standard deviation of the signal and percentiles."""
+    signal = signal.squeeze()
+    std = numpy.std(signal)
+    percentiles = numpy.percentile(signal, [10, 20, 30, 40, 50, 60, 70, 80, 90])
+    return numpy.append(std, percentiles)
 
-# Extract features using Discrete Wavelet Transform (CWT)
 class EEGSignalToFeaturesDWT:
-     def __init__(self, wavelet, mode):
-          self.wavelet = wavelet
-          self.mode = mode
-     
-     def __call__(self, signal):
-          features = [_signal_to_features(n) for n in pywt.wavedec(signal, wavelet = self.wavelet, mode = self.mode)]
-          return numpy.asarray(features).flatten()
+    """Extracts features using Discrete Wavelet Transform (DWT)."""
+    def __init__(self, wavelet, mode):
+        self.wavelet = wavelet
+        self.mode = mode
+    
+    def __call__(self, signal):
+        features = [_signal_to_features(n) for n in pywt.wavedec(signal, wavelet = self.wavelet, mode = self.mode)]
+        return numpy.asarray(features).flatten()
 
-# Extract features using Fast Fourier Transform (CWT)
 class EEGSignalToFeaturesFFT:
+    """Extracts features using Fast Fourier Transform (FFT)."""
 
     def __init__(self, sampling_rate):
         self.sampling_rate = sampling_rate
@@ -46,8 +46,8 @@ class EEGSignalToFeaturesFFT:
         features = np.concatenate((magnitude_spectrum, phase_spectrum))
         return features
 
-# Extract features using Continuous Wavelet Transform (CWT)
 class EEGSignalToFeaturesCWT:
+    """Extracts features using Continuous Wavelet Transform (CWT)."""
 
     def __init__(self, wavelet):
         self.wavelet = wavelet
@@ -75,8 +75,8 @@ class EEGSignalToFeaturesCWT:
         exit()
         return np.asarray(features).flatten()
 
-# Extract features using Welch's method
 class EEGSignalToFeaturesWelch:
+    """Extracts features using Welch's method."""
     def __init__(self, sampling_rate, nperseg=None):
         self.sampling_rate = sampling_rate
         self.nperseg = nperseg or sampling_rate // 2
@@ -90,8 +90,8 @@ class EEGSignalToFeaturesWelch:
         return power
 
 
-# Calculate performance metrics of classifier
 class ClassifierPerformanceMetrics:
+    """Calculates performance metrics of a classifier."""
     def __init__(self, y_true, y_pred, y_proba):
         tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
 
@@ -101,8 +101,8 @@ class ClassifierPerformanceMetrics:
         self.f1_score = 2 * tp / (2 * tp + fp + fn)
         self.auroc = roc_auc_score(y_true, y_proba[:, 1])
 
-# Evaluate classifier using the dataset
 def evaluate_classifier(model, dataset):
+    """Evaluates a classifier using the dataset."""
     x, y_true = zip(*dataset)
     y_pred = model.predict(x)
     y_proba = model.predict_proba(x)
@@ -202,6 +202,3 @@ if __name__ == '__main__':
     plot_filename = args.plot_path / f"{args.plot_name}.png"
     os.makedirs(plot_filename.parent, exist_ok=True)
     plt.savefig(plot_filename)
-
-
-

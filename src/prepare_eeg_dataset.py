@@ -15,15 +15,15 @@ import tqdm
 import random
 random.seed(20)
 
-# find EDF and corresponding CSV files
 def _filenames_of_edf_csv_pairs(edf_dir: str):
+    """Finds EDF and corresponding CSV files."""
     edf_files = glob.glob(os.path.join(edf_dir, "*.edf"))
     filenames = [os.path.splitext(os.path.basename(x))[0] for x in edf_files]
     filenames_with_csv_and_edf = [x for x in filenames if os.path.isfile(os.path.join(edf_dir, x + ".csv")) ]
     return sorted(filenames_with_csv_and_edf)
 
-# Check if file contains interesting channel
 def _has_interesting_channel(channel_spec: str, channels: 'list[str]'):
+    """Checks if a CSV channel specification (e.g. FP1-F7) contains an interesting channel."""
     channels_in_spec = channel_spec.split('-')
     for channel in channels_in_spec:
         if channel in channels:
@@ -32,6 +32,7 @@ def _has_interesting_channel(channel_spec: str, channels: 'list[str]'):
 
 
 def _merge_ranges(ranges: 'list[tuple[int, int]]'):
+    """Returns a copy of ranges (list of tuples (start, end)) where all overlapping ranges have been merged."""
     for range in ranges:
         assert range[0] < range[1]
         if range[0] >= range[1]:
@@ -51,6 +52,7 @@ def _merge_ranges(ranges: 'list[tuple[int, int]]'):
 
 
 def _inverted_ranges(ranges: 'list[tuple[int, int]]', begin: float, end: float):
+    """Returns a list of ranges (tuples (start, end)), that is the inversion of the argument ranges. That is: ranges of the gaps between ranges."""
     if len(ranges) == 0:
         return [(begin, end)]
     
@@ -70,6 +72,10 @@ def _inverted_ranges(ranges: 'list[tuple[int, int]]', begin: float, end: float):
 
 
 def _eroded_ranges(ranges: 'list[tuple[int, int]]', erode_by: float):
+    """
+    Returns a list of ranges (tuples (start, end)) where the ranges have been eroded by the argument to eroded_by (start + eroded_by, end - eroded_by).
+    Ranges that would be empty afterwards (start >= end) are discarded.
+    """
     i = 0
 
     while i < len(ranges):
@@ -81,8 +87,8 @@ def _eroded_ranges(ranges: 'list[tuple[int, int]]', erode_by: float):
     
     return ranges
 
-# Read EDF files
 class EdfReader(object):
+    """Context object for EDF files (use with "with" statement)."""
     def __init__(self, path: str):
         self.path = path
     
@@ -93,8 +99,8 @@ class EdfReader(object):
     def __exit__(self, *args):
         self.file.close()
 
-# Get ranges for specified labels from csv
 def _get_ranges_for_labels(csv_file_path: str, labels: 'list[str]', channels: 'list[str]', _unused_signal_length: float):
+    """Returns ranges (list of tuples (begin, end)) for the specified labels and channels from csv."""
     csv_data = pandas.read_csv(csv_file_path, delimiter = ",", skiprows = 5)
     interesting_data = csv_data[csv_data['label'].isin(labels) &
                                 csv_data['channel'].apply(lambda x: _has_interesting_channel(x, channels))]
@@ -115,8 +121,8 @@ def _get_ranges_for_labels(csv_file_path: str, labels: 'list[str]', channels: 'l
     
     return ranges_for_labels
 
-# Get ranges for unlabeled parts from csv
 def _get_ranges_unlabeled(csv_file_path: str, _unused_labels: 'list[str]', channels: 'list[str]', signal_length: float):
+    """Returns ranges (list of tuples (begin, end)) for unlabeled parts from csv."""
     csv_data = pandas.read_csv(csv_file_path, delimiter = ",", skiprows = 5)
     interesting_data = csv_data[csv_data['channel'].apply(lambda x: _has_interesting_channel(x, channels))]
 
@@ -133,21 +139,22 @@ def _get_ranges_unlabeled(csv_file_path: str, _unused_labels: 'list[str]', chann
     
     return ranges
 
-# Normalise channel names
 def _normalize_channel_name(name: str):
+    """Normalises channel names (e.g. "EEG F1-Ref" -> "F1")."""
     if name.startswith('EEG '):
         name = name[4:]
     name = name.split('-')[0]
     return name
 
-# Resample signal to target frequency given
 def _resample_signal(signal, source_frequency: float, target_frequency: float):
+    """Resamples signal to target frequency given."""
     if source_frequency == target_frequency:
         return signal
     else:
         return scipy.signal.resample(signal, int(len(signal) * target_frequency / source_frequency))
 
 def _butter_bandpass(lowcut, highcut, fs, order=5):
+    """Returns filter coefficients for a Butterworh filter with specified parameters."""
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
@@ -155,11 +162,13 @@ def _butter_bandpass(lowcut, highcut, fs, order=5):
     return b, a
 
 def _bandpass_filter(data, lowcut, highcut, fs, order=5):
+    """Filters the signal "data" with a bandpass filter with specified parameters."""
     b, a = _butter_bandpass(lowcut, highcut, fs, order=order)
     y = filtfilt(b, a, data)
     return y
 
 def _notch_filter(data, notch_freq, fs, quality_factor=30):
+    """Filters the signal "data" with a notch filter with specified parameters."""
     b, a = iirnotch(notch_freq / (0.5 * fs), quality_factor)
     y = filtfilt(b, a, data)
     return y
@@ -178,6 +187,23 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                         lowcut: float,
                         highcut: float,
                         max_files: None):
+    """
+    Prepares the TUH EEG dataset at input_path and calls the callable do_with_samples on each prepared sample.
+
+    - input_path: Path to TUH EEG dataset (must contain EDF and corresponding CSV files)
+    - channels_to_extract: List of channels to extract (e.g. ["CZ", "F1", "F3"])
+    - classes_to_extract: List of classes (targets) to extract (e.g. ["bckg", "fnsz"])
+    - target_frequency: All samples are resampled to this frequency
+    - signal_length_in_seconds: All samples will have this duration in seconds (duration * target_frequency = number of values)
+    - extrac_ranges_from_csv: Callable that determines what signal ranges should be extracted from the specified channels
+    - do_with_samples: This callable is called with every extracted sample
+    - erode_channels_by_secs: Every channel is eroded by this amount of seconds from the beginning and the end (eroded = removed)
+    - erode_ranges_by_secs: Every range returned by extrac_ranges_from_csv is eroded by this amount of seconds form the beginning and the end (eroded = removed)
+    - notch_filter: Frequency of the notch filter that is applied to every sample
+    - lowcut: Lowcut parameter of the bandpass filter that is applied to every sample
+    - highcut: Highcut parameter of the bandpass filter that is applied to every sample
+    - max_files: Stops after extracting max_files number of samples. Should be used with care, since the sample extraction is not randomized.
+    """
 
     # pair edf and csv files
     filenames_with_csv_and_edf = _filenames_of_edf_csv_pairs(input_path)
@@ -270,8 +296,9 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
     
     progress.close()
 
-# dump signal to .npy file
+
 def _dump_sample(output_path: str, signal_data: numpy.typing.NDArray, source_filename: str, label: str, start_index: int, end_index: int) -> int:
+    """Dumps signal to .npy file."""
     os.makedirs(os.path.join(output_path, label), exist_ok=True)
     output_filename = source_filename + "_" + str(start_index).rjust(7, '0') + "_" + str(end_index - start_index) + ".npy"
     output_file_path = os.path.join(output_path, label, output_filename)
