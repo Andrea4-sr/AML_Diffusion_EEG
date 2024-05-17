@@ -22,30 +22,44 @@ random.seed(20)
 
 class EEGPreprocessor:
     def __init__(self, sampling_rate, lowcut, highcut):
+        # sampling rate of the EEG signal
         self.sampling_rate = sampling_rate
+        # lower cutoff frequency for the bandpass filter
         self.lowcut = lowcut
+        # higher cutoff frequency for the bandpass filter
         self.highcut = highcut
     
     def __call__(self, data):
         return self.bandpass_fitler(data, self.sampling_rate, self.lowcut, self.highcut)
     
     def bandpass_fitler(self, data, sampling_rate, lowcut, highcut):
+
+        # calculate the nyquist frequency -- half of the sampling rate
         nyq = 0.5 * sampling_rate
+        # normalise lower cutoff frequency with respect to the nyquist frequency
         low = lowcut/nyq
+        # normalise higher cutoff frequency with respect to the nyquist frequency
         high = highcut/nyq
+
+
         order = 2
+
+        # Butterworth bandpass filter
+        # returns filter coefficients
         b, a = butter(order, [low, high], btype='band')
+
+        # Applies forward-backward filtering to ensure zero phase distortion
         filtered_data = filtfilt(b, a, data)
         return filtered_data
 
-
+# Signal to feature vector composed of std and percentiles
 def _signal_to_features(signal):
      signal = signal.squeeze()
      std = numpy.std(signal)
      percentiles = numpy.percentile(signal, [10, 20, 30, 40, 50, 60, 70, 80, 90])
      return numpy.append(std, percentiles)
 
-
+# Extract features from signals using Discrete Wavelet Transform (DWT)
 class EEGSignalToFeaturesDWT:
      def __init__(self, wavelet, mode):
           self.wavelet = wavelet
@@ -55,6 +69,7 @@ class EEGSignalToFeaturesDWT:
           features = [_signal_to_features(n) for n in pywt.wavedec(signal, wavelet = self.wavelet, mode = self.mode)]
           return numpy.asarray(features).flatten()
 
+# Extract features from signals using Fast Fourier Transform (FFT)
 class EEGSignalToFeaturesFFT:
 
     def __init__(self, sampling_rate):
@@ -67,6 +82,7 @@ class EEGSignalToFeaturesFFT:
         features = np.concatenate((magnitude_spectrum, phase_spectrum))
         return features
 
+# Extract features from signals using Welch's method
 class EEGSignalToFeaturesWelch:
     def __init__(self, sampling_rate, nperseg=None):
         self.sampling_rate = sampling_rate
@@ -78,17 +94,19 @@ class EEGSignalToFeaturesWelch:
         power = np.log(power)
         return power
 
-
+# Train a classifier on a given dataset
 def train_classifier(model, dataset):
      feature_list, target_list = zip(*dataset)
      model.fit(feature_list, target_list)
      return model
 
+# Combinations of feature extraction methods and classifiers
 def feature_classifier_combos(feat_ext_methods, classifiers):
 
     combos = list(itertools.product(feat_ext_methods, classifiers))
     return combos
 
+# Load and transform dataset
 def load_and_transform_data(dataset, transform):
     processed_data = []
     for path, target in dataset.samples:
@@ -105,14 +123,17 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # check if dataset path exists
     if not os.path.isdir(args.dataset_path):
          print(f"Error: {args.dataset_path} does not exist (or is no folder or not accessible)")
          quit()
 
+    # check if model dump path exists
     if os.path.exists(args.model_dump_path):
          print(f"Error: {args.model_dump_path} already exists")
          quit()
 
+    # define models and feature extractors to use
     models = [svm.SVC(probability=True)] #GradientBoostingClassifier(n_estimators = 100), , MLPClassifier()]
     feature_extractors = [EEGSignalToFeaturesFFT] # [EEGSignalToFeaturesWelch, , EEGSignalToFeaturesDWT] #EEGSignalToFeaturesCWT]
     combos = feature_classifier_combos(feature_extractors, models)
@@ -126,6 +147,7 @@ if __name__ == "__main__":
 
         print('Loading dataset...')
 
+        # transform data
         transform = torchvision.transforms.Compose([numpy.squeeze,
                                                    EEGPreprocessor(250, 0.5, 40),
                                                    EEGSignalToFeaturesFFT(sampling_rate=250)
@@ -136,9 +158,12 @@ if __name__ == "__main__":
                                                      extensions=("npy",),
                                                      transform=transform)
 
+        # apply transformations to the dataset
         processed_data = load_and_transform_data(dataset, transform)
+        # shuffle dataset
         random.shuffle(processed_data)
 
+        # train different classifiers at with increasing number of samples
         for sample_size in range(200, args.n_samples, 200):
 
             # Ensure the sample dataset contains both classes
