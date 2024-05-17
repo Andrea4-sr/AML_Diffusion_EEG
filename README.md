@@ -23,7 +23,7 @@ git clone https://github.com/Andrea4-sr/AML_Diffusion_EEG.git
 cd AML_Diffusion_EEG
 ```
 
-This project was developed using Python 3.8.18. To install the required packages, run the following command:
+This project was developed using Python 3.8.18. To install the required packages, create a new conda/venv environment and run the following command:
 
 ```sh
 pip install -r requirements.txt
