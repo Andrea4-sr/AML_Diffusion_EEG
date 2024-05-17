@@ -15,14 +15,14 @@ import tqdm
 import random
 random.seed(20)
 
-
+# find EDF and corresponding CSV files
 def _filenames_of_edf_csv_pairs(edf_dir: str):
     edf_files = glob.glob(os.path.join(edf_dir, "*.edf"))
     filenames = [os.path.splitext(os.path.basename(x))[0] for x in edf_files]
     filenames_with_csv_and_edf = [x for x in filenames if os.path.isfile(os.path.join(edf_dir, x + ".csv")) ]
     return sorted(filenames_with_csv_and_edf)
 
-
+# Check if file contains interesting channel
 def _has_interesting_channel(channel_spec: str, channels: 'list[str]'):
     channels_in_spec = channel_spec.split('-')
     for channel in channels_in_spec:
@@ -81,7 +81,7 @@ def _eroded_ranges(ranges: 'list[tuple[int, int]]', erode_by: float):
     
     return ranges
 
-
+# Read EDF files
 class EdfReader(object):
     def __init__(self, path: str):
         self.path = path
@@ -93,7 +93,7 @@ class EdfReader(object):
     def __exit__(self, *args):
         self.file.close()
 
-
+# Get ranges for specified labels from csv
 def _get_ranges_for_labels(csv_file_path: str, labels: 'list[str]', channels: 'list[str]', _unused_signal_length: float):
     csv_data = pandas.read_csv(csv_file_path, delimiter = ",", skiprows = 5)
     interesting_data = csv_data[csv_data['label'].isin(labels) &
@@ -115,7 +115,7 @@ def _get_ranges_for_labels(csv_file_path: str, labels: 'list[str]', channels: 'l
     
     return ranges_for_labels
 
-
+# Get ranges for unlabeled parts from csv
 def _get_ranges_unlabeled(csv_file_path: str, _unused_labels: 'list[str]', channels: 'list[str]', signal_length: float):
     csv_data = pandas.read_csv(csv_file_path, delimiter = ",", skiprows = 5)
     interesting_data = csv_data[csv_data['channel'].apply(lambda x: _has_interesting_channel(x, channels))]
@@ -133,20 +133,20 @@ def _get_ranges_unlabeled(csv_file_path: str, _unused_labels: 'list[str]', chann
     
     return ranges
 
-
+# Normalise channel names
 def _normalize_channel_name(name: str):
     if name.startswith('EEG '):
         name = name[4:]
     name = name.split('-')[0]
     return name
 
-
+# Resample signal to target frequency given
 def _resample_signal(signal, source_frequency: float, target_frequency: float):
     if source_frequency == target_frequency:
         return signal
     else:
         return scipy.signal.resample(signal, int(len(signal) * target_frequency / source_frequency))
-    
+
 def _butter_bandpass(lowcut, highcut, fs, order=5):
     nyq = 0.5 * fs
     low = lowcut / nyq
@@ -178,16 +178,19 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                         lowcut: float,
                         highcut: float,
                         max_files: None):
-    
+
+    # pair edf and csv files
     filenames_with_csv_and_edf = _filenames_of_edf_csv_pairs(input_path)
     csv_files = [os.path.join(input_path, x + ".csv") for x in filenames_with_csv_and_edf]
     edf_files = [os.path.join(input_path, x + ".edf") for x in filenames_with_csv_and_edf]
 
+    # number of samples per segment
     num_samples = target_frequency * signal_length_in_seconds
     files_created = 0
 
     progress = tqdm.tqdm(total = len(edf_files) if max_files is None else max_files, unit = " files")
 
+    # shuffle paired csv and edf files
     paired_files = list(zip(csv_files, edf_files))
     random.shuffle(paired_files)
 
@@ -198,6 +201,7 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                 interesting_channel_indices = []
                 skip_file = False
 
+                # get indices of interesting channels
                 for interesting_channel in channels_to_extract:
                     try:
                         interesting_channel_indices.append(channels.index(interesting_channel))
@@ -207,10 +211,12 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                         break
                 
                 if not skip_file:
+                    # read signals for interesting channels
                     data_per_channel = [edf_file.readSignal(channel) for channel in interesting_channel_indices]
                     # plt.plot(data_per_channel[0][10000:11000])
                     # plt.show()
                     frequency_per_channel = [edf_file.getSampleFrequency(channel) for channel in interesting_channel_indices]
+                    # resample, bandpass filter and notch filter signal
                     data_per_channel = [_resample_signal(signal, source_freq, target_frequency) for signal, source_freq in zip(data_per_channel, frequency_per_channel)]
                     # plt.plot(data_per_channel[0][10000:11000])
                     # plt.show()
@@ -237,6 +243,7 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                         if erode_ranges_by_secs is not None:
                             ranges = {label: _eroded_ranges(ranges[label], erode_ranges_by_secs) for label in ranges}
 
+                        # process each range
                         for label in ranges:
                             for r in ranges[label]:
                                 start_index = int(r[0] * target_frequency)
@@ -263,7 +270,7 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
     
     progress.close()
 
-
+# dump signal to .npy file
 def _dump_sample(output_path: str, signal_data: numpy.typing.NDArray, source_filename: str, label: str, start_index: int, end_index: int) -> int:
     os.makedirs(os.path.join(output_path, label), exist_ok=True)
     output_filename = source_filename + "_" + str(start_index).rjust(7, '0') + "_" + str(end_index - start_index) + ".npy"
