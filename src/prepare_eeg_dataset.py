@@ -181,9 +181,10 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                         signal_length_in_seconds: int,
                         extract_ranges_from_csv: Callable[[str, 'list[str]', 'list[str]', float], 'dict[str, list[float, float]]'],
                         do_with_samples: Callable[[numpy.typing.NDArray, str, str, int, int], int],
-                        erode_channels_by_secs: None,
                         erode_ranges_by_secs: None,
-                        notch_filter: int,
+                        notch_channels_by_secs: None,
+                        erode_channels_by_secs: None,
+                        erode_filter: int,
                         lowcut: float,
                         highcut: float,
                         max_files: None):
@@ -249,7 +250,7 @@ def prepare_eeg_dataset(input_path: pathlib.Path,
                     data_per_channel = [_bandpass_filter(signal, lowcut, highcut, target_frequency) for signal in data_per_channel]
                     # plt.plot(data_per_channel[0][10000:11000])
                     # plt.show()
-                    data_per_channel = [_notch_filter(signal, notch_filter, target_frequency) for signal in data_per_channel] if notch_filter is not None else data_per_channel
+                    data_per_channel = [_notch_filter(signal, 60, target_frequency) for signal in data_per_channel] # if notch_filter is not None else data_per_channel
                     # plt.plot(data_per_channel[0][10000:11000])
                     # plt.show()
 
@@ -332,19 +333,20 @@ if __name__ == "__main__":
     os.makedirs(args.output_path, exist_ok = True)
 
     # Extract samples for the requested channels and classes.
-    prepare_eeg_dataset(args.input_path,
-                        channels_to_extract,
-                        classes_to_extract,
-                        args.frequency,
-                        args.duration,
-                        _get_ranges_for_labels,
-                        lambda signal_data, source_filename, label, start_index, end_index: _dump_sample(args.output_path, signal_data, source_filename, label, start_index, end_index),
-                        60,
-                        None,
-                        args.notch_filter,
-                        args.lowcut,
-                        args.highcut,
-                        args.max_files)
+    prepare_eeg_dataset(input_path=args.input_path,
+                        channels_to_extract=channels_to_extract,
+                        classes_to_extract=classes_to_extract,
+                        target_frequency=args.frequency,
+                        signal_length_in_seconds=args.duration,
+                        extract_ranges_from_csv=_get_ranges_for_labels,
+                        do_with_samples=lambda signal_data, source_filename, label, start_index, end_index: _dump_sample(args.output_path, signal_data, source_filename, label, start_index, end_index),
+                        erode_ranges_by_secs=60,
+                        notch_channels_by_secs=None,
+                        erode_channels_by_secs=20,
+                        erode_filter=None,
+                        lowcut=args.lowcut,
+                        highcut=args.highcut,
+                        max_files=args.max_files)
 
     # Extract samples for the requested channels that do not belong to a class
     # and put them in a class "non_seizure".
